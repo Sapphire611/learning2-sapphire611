@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>精通 Vue：完整学习路线 &amp; 源码解析指南</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d2991d;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --orange: #f0883e;
+    --cyan: #39d2c0;
+    --vue: #42b883;
+    --vue-dark: #35495e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 2.2rem;
+    color: #fff;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+  h2 {
+    font-size: 1.6rem;
+    color: var(--vue);
+    margin: 2.5rem 0 1rem;
+    padding-left: 0.5rem;
+    border-left: 4px solid var(--vue);
+  }
+  h3 {
+    font-size: 1.2rem;
+    color: var(--accent);
+    margin: 1.5rem 0 0.8rem;
+  }
+  p { margin-bottom: 0.8rem; }
+  ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+  li { margin-bottom: 0.3rem; }
+  strong { color: #fff; }
+  code {
+    background: #1c2128;
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9em;
+    color: var(--orange);
+  }
+  pre {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    overflow-x: auto;
+    margin-bottom: 1.2rem;
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; color: var(--text); }
+  .cm { color: #8b949e; font-style: italic; }
+  .kw { color: #ff7b72; }
+  .str { color: #a5d6ff; }
+  .fn { color: #d2a8ff; }
+  .num { color: #79c0ff; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0 1.5rem;
+    font-size: 0.9rem;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 0.6rem 0.8rem;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: #1c2128; color: #fff; font-weight: 600; }
+  tr:nth-child(even) { background: #0d1117; }
+  tr:hover { background: #1c2128; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem 1.5rem;
+    margin: 1rem 0 1.5rem;
+  }
+  .note {
+    background: #1c2128;
+    border-left: 4px solid var(--yellow);
+    padding: 0.8rem 1rem;
+    margin: 1rem 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .warn {
+    background: #1c2128;
+    border-left: 4px solid var(--red);
+    padding: 0.8rem 1rem;
+    margin: 1rem 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .tip {
+    background: #1c2128;
+    border-left: 4px solid var(--green);
+    padding: 0.8rem 1rem;
+    margin: 1rem 0;
+    border-radius: 0 6px 6px 0;
+  }
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2rem 0;
+  }
+  .footer {
+    text-align: center;
+    color: var(--muted);
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .diff-box {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+  @media (max-width: 700px) { .diff-box { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<h1>🟢 精通 Vue.js：完整学习路线 &amp; 源码解析指南</h1>
+
+<h2>前言：Vue 的三层境界</h2>
+
+<div class="card">
+  <table style="margin:0;">
+    <tr>
+      <th style="width:15%">境界</th>
+      <th style="width:25%">能力</th>
+      <th>衡量标准</th>
+    </tr>
+    <tr>
+      <td><strong>会用</strong></td>
+      <td>能独立完成中后台项目</td>
+      <td>熟练使用 Composition API、Vue Router、Pinia、组件库</td>
+    </tr>
+    <tr>
+      <td><strong>会用且优化</strong></td>
+      <td>能写出高性能代码、排查性能瓶颈</td>
+      <td>理解虚拟 DOM diff、编译优化、能做到首屏 < 2s</td>
+    </tr>
+    <tr>
+      <td><strong>懂得为什么</strong></td>
+      <td>能设计框架级方案、读源码如读文档</td>
+      <td>能手写 mini-vue（reactive + runtime + compiler）</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>一、响应式系统（Vue 的灵魂）</h2>
+
+<h3>1.1 Vue 3 响应式原理（必须能白板画出）</h3>
+
+<pre><code><span class="cm">// 核心三步：track → trigger → effect</span>
+
+<span class="cm">// 1. 依赖收集 (track)</span>
+<span class="kw">let</span> activeEffect;
+<span class="kw">const</span> targetMap = <span class="kw">new</span> WeakMap();  <span class="cm">// target → depsMap</span>
+
+<span class="kw">function</span> <span class="fn">track</span>(target, key) {
+  <span class="kw">let</span> depsMap = targetMap.get(target);
+  <span class="kw">if</span> (!depsMap) { targetMap.set(target, (depsMap = <span class="kw">new</span> Map())); }
+  <span class="kw">let</span> dep = depsMap.get(key);
+  <span class="kw">if</span> (!dep) { depsMap.set(key, (dep = <span class="kw">new</span> Set())); }
+  <span class="kw">if</span> (activeEffect && !dep.has(activeEffect)) {
+    dep.add(activeEffect);
+    activeEffect.deps.push(dep);  <span class="cm">// 双向记录，用于 cleanup</span>
+  }
+}
+
+<span class="cm">// 2. 派发更新 (trigger)</span>
+<span class="kw">function</span> <span class="fn">trigger</span>(target, key) {
+  <span class="kw">const</span> depsMap = targetMap.get(target);
+  <span class="kw">if</span> (!depsMap) <span class="kw">return</span>;
+  <span class="kw">const</span> effects = <span class="kw">new</span> Set(depsMap.get(key) || []);
+  effects.forEach(<span class="fn">e</span> => {
+    <span class="kw">if</span> (e !== activeEffect) {   <span class="cm">// 防止死循环</span>
+      <span class="kw">if</span> (e.scheduler) e.scheduler();  <span class="cm">// computed / watch 走调度器</span>
+      <span class="kw">else</span> e.run();
+    }
+  });
+}
+
+<span class="cm">// 3. effect（依赖的消费者）</span>
+<span class="kw">function</span> <span class="fn">effect</span>(fn, options = {}) {
+  <span class="kw">const</span> _effect = <span class="kw">new</span> ReactiveEffect(fn, options.scheduler);
+  _effect.run();
+  <span class="kw">return</span> _effect;
+}</code></pre>
+
+<h3>1.2 ref vs reactive：什么时候用什么</h3>
+
+<table>
+  <tr><th></th><th>ref</th><th>reactive</th></tr>
+  <tr><td><strong>基础类型</strong></td><td>✅ 支持 string/number/boolean</td><td>❌ 只支持对象</td></tr>
+  <tr><td><strong>解构保持响应式</strong></td><td>❌ 解构后失去 (<code>.value</code> 是响应式的，但解构后变量不是)</td><td>❌ 解构后失去（需 <code>toRefs</code>）</td></tr>
+  <tr><td><strong>替换整个值</strong></td><td>✅ <code>ref.value = newVal</code> 触发更新</td><td>❌ <code>state = newObj</code> 丢失响应式</td></tr>
+  <tr><td><strong>template 解包</strong></td><td>✅ 自动解包（顶层 ref）</td><td>—</td></tr>
+  <tr><td><strong>底层实现</strong></td><td><code>class RefImpl { get value() { track(); return _value; } }</code></td><td><code>new Proxy(target, handlers)</code></td></tr>
+</table>
+
+<div class="tip">
+  <strong>经验法则：</strong>单个值用 <code>ref</code>；一组关联状态用 <code>reactive</code>；API 返回值一律用 <code>ref</code>（方便解构和传递）。涉及解构用 <code>toRefs</code>。
+</div>
+
+<h3>1.3 computed 的实现——懒执行 + 缓存 + 依赖追踪</h3>
+
+<pre><code><span class="kw">class</span> ComputedRefImpl {
+  <span class="kw">constructor</span>(getter) {
+    <span class="kw">this</span>._dirty = <span class="kw">true</span>;           <span class="cm">// 脏标记</span>
+    <span class="kw">this</span>._value = <span class="kw">undefined</span>;
+    <span class="kw">this</span>.effect = <span class="kw">new</span> ReactiveEffect(getter, () => {
+      <span class="cm">// scheduler：依赖变化时不立即重算，只标脏</span>
+      <span class="kw">if</span> (!<span class="kw">this</span>._dirty) {
+        <span class="kw">this</span>._dirty = <span class="kw">true</span>;
+        trigger(<span class="kw">this</span>, <span class="str">'value'</span>);  <span class="cm">// 通知 computed 的消费者</span>
+      }
+    });
+  }
+  <span class="kw">get</span> value() {
+    track(<span class="kw">this</span>, <span class="str">'value'</span>);
+    <span class="kw">if</span> (<span class="kw">this</span>._dirty) {
+      <span class="kw">this</span>._dirty = <span class="kw">false</span>;
+      <span class="kw">this</span>._value = <span class="kw">this</span>.effect.run();  <span class="cm">// 懒求值</span>
+    }
+    <span class="kw">return</span> <span class="kw">this</span>._value;
+  }
+}</code></pre>
+
+<h3>1.4 watch vs watchEffect vs computed 的选择</h3>
+
+<table>
+  <tr><th>API</th><th>触发时机</th><th>有返回值</th><th>适用场景</th></tr>
+  <tr><td><code>computed</code></td><td>依赖变化时懒求值</td><td>✅ 同步值</td><td>派生状态（如 <code>fullName = firstName + lastName</code>）</td></tr>
+  <tr><td><code>watchEffect</code></td><td>立即执行 + 依赖变化时自动执行</td><td>❌</td><td>无副作用的自动追踪（如 <code>watchEffect(() => fetchData(id.value)</code>) </td></tr>
+  <tr><td><code>watch</code></td><td>数据源变化时执行</td><td>✅ 可拿到新旧值</td><td>需对比新旧值、需条件触发（如路由变化）</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>二、虚拟 DOM 与渲染机制</h2>
+
+<h3>2.1 虚拟 DOM 三剑客：h() → render() → mount/patch</h3>
+
+<pre><code><span class="cm">// VNode 数据结构（简化）</span>
+<span class="kw">const</span> vnode = {
+  type: <span class="str">'div'</span>,               <span class="cm">// 标签名、组件对象、Fragment、Text 等</span>
+  props: { id: <span class="str">'app'</span>, class: <span class="str">'container'</span> },
+  children: [
+    { type: <span class="str">'span'</span>, children: <span class="str">'hello'</span> }
+  ],
+  el: <span class="kw">null</span>,                   <span class="cm">// 对应的真实 DOM，mount 后设置</span>
+  component: <span class="kw">null</span>,            <span class="cm">// 组件实例</span>
+  shapeFlag: ShapeFlags.ELEMENT, <span class="cm">// 位运算优化类型判断</span>
+  key: <span class="kw">null</span>,                  <span class="cm">// diff 优化的关键</span>
+}</code></pre>
+
+<h3>2.2 Vue 3 Diff 算法核心优化（比 React 快的关键）</h3>
+
+<pre><code><span class="cm">// Vue 3 patchChildren 五步法（针对无 key 或静态提升的场景）</span>
+
+<span class="cm">// Step 1: 从头同步相同节点</span>
+<span class="kw">while</span> (i &lt;= e1 && i &lt;= e2) {
+  <span class="kw">const</span> n1 = c1[i], n2 = c2[i];
+  <span class="kw">if</span> (sameVnode(n1, n2)) { patch(n1, n2); i++; }
+  <span class="kw">else</span> <span class="kw">break</span>;
+}
+
+<span class="cm">// Step 2: 从尾同步相同节点</span>
+<span class="kw">while</span> (i &lt;= e1 && i &lt;= e2) {
+  <span class="kw">const</span> n1 = c1[e1], n2 = c2[e2];
+  <span class="kw">if</span> (sameVnode(n1, n2)) { patch(n1, n2); e1--; e2--; }
+  <span class="kw">else</span> <span class="kw">break</span>;
+}
+
+<span class="cm">// Step 3: 老的全遍历完了，新的还有 → 挂载剩余新节点</span>
+<span class="kw">if</span> (i &gt; e1) { <span class="cm">/* mount new nodes from i to e2 */</span> }
+
+<span class="cm">// Step 4: 新的全遍历完了，老的还有 → 卸载剩余老节点</span>
+<span class="kw">if</span> (i &gt; e2) { <span class="cm">/* unmount old nodes from i to e1 */</span> }
+
+<span class="cm">// Step 5: 中间乱序区域 → 最长递增子序列 (LIS)</span>
+<span class="cm">// 这是核心优化：找到可复用的最长序列，只移动其他的</span>
+<span class="kw">const</span> newIdxMap = <span class="kw">new</span> Map();  <span class="cm">// key → index (新 children)</span>
+<span class="kw">for</span> (<span class="kw">let</span> j = s2; j &lt;= e2; j++) newIdxMap.set(c2[j].key, j);
+
+<span class="cm">// 遍历老的，标记哪些可复用、哪些要删</span>
+<span class="kw">const</span> newIdxToOldIdx = <span class="kw">new</span> Array(toBePatched);
+<span class="kw">for</span> (<span class="kw">let</span> j = s1; j &lt;= e1; j++) {
+  <span class="kw">const</span> newIdx = newIdxMap.get(c1[j].key);
+  <span class="kw">if</span> (newIdx !== <span class="kw">undefined</span>) {
+    newIdxToOldIdx[newIdx - s2] = j;  <span class="cm">// 记录对应关系</span>
+    patch(c1[j], c2[newIdx]);
+  } <span class="kw">else</span> { unmount(c1[j]); }  <span class="cm">// 老节点在新列表不存在</span>
+}
+
+<span class="cm">// 求 LIS，只移动不在 LIS 中的节点 → O(n log n) 的最少移动</span>
+<span class="kw">const</span> lis = getSequence(newIdxToOldIdx);
+<span class="kw">for</span> (<span class="kw">let</span> j = lis.length - <span class="num">1</span>; j &gt;= <span class="num">0</span>; j--) {
+  <span class="kw">if</span> (lis.includes(j)) <span class="kw">continue</span>;    <span class="cm">// 在 LIS 中 = 不需要移动</span>
+  <span class="kw">const</span> anchor = c2[nextIdx];          <span class="cm">// 插入到下一个节点之前</span>
+  move(c2[j], anchor);
+}</code></pre>
+
+<div class="note">
+  <strong>为什么用 LIS？</strong>旧的 children 的顺序 = newIdxToOldIdx 数组，找到其中的最长递增子序列 = 那些<strong>相对顺序已经对的节点</strong>，它们不需要移动。其余节点插入到正确位置。时间复杂度从 O(n²) 降到 O(n log n)。
+</div>
+
+<h3>2.3 Block Tree 与靶向更新（Vue 3 独有的大杀器）</h3>
+
+<pre><code><span class="cm">// 传统 diff：全树递归，即使只有 1 个节点变了</span>
+<span class="cm">// Vue 3 的 Block Tree：</span>
+<span class="cm">// - 模板编译时，静态节点被提升（hoisted），不参与 diff</span>
+<span class="cm">// - 动态节点收集到 dynamicChildren 数组</span>
+<span class="cm">// - patch 时只遍历 dynamicChildren，跳过所有静态内容</span>
+
+<span class="cm">// 编译前：</span>
+&lt;div&gt;
+  &lt;span&gt;static text&lt;/span&gt;              <span class="cm">&lt;!-- 不变 → hoist 外面 --&gt;</span>
+  &lt;p&gt;{{ dynamic }}&lt;/p&gt;               <span class="cm">&lt;!-- 动态 → 进 dynamicChildren --&gt;</span>
+  &lt;span class="static"&gt;more static&lt;/span&gt; <span class="cm">&lt;!-- 不变 → hoist 外面 --&gt;</span>
+&lt;/div&gt;
+
+<span class="cm">// 编译后（简化）：</span>
+<span class="kw">const</span> _hoisted_1 = createVNode(<span class="str">'span'</span>, <span class="kw">null</span>, <span class="str">'static text'</span>);
+<span class="kw">const</span> _hoisted_2 = createVNode(<span class="str">'span'</span>, {class: <span class="str">'static'</span>}, <span class="str">'more static'</span>);
+render() {
+  <span class="kw">return</span> (openBlock(), createBlock(<span class="str">'div'</span>, <span class="kw">null</span>, [
+    _hoisted_1,    <span class="cm">// 静态：patchFlag = -1 (NEVER need patch)</span>
+    createVNode(<span class="str">'p'</span>, <span class="kw">null</span>, ctx.dynamic, <span class="num">1</span> <span class="cm">/* TEXT */</span>),
+    _hoisted_2,
+  ]));
+}</code></pre>
+
+<pre><code><span class="cm">// patchFlag 位掩码（编译优化核心）</span>
+<span class="kw">const</span> PatchFlags = {
+  TEXT:          <span class="num">1</span>,   <span class="cm">// 只改文本</span>
+  CLASS:         <span class="num">2</span>,   <span class="cm">// 只改 class</span>
+  STYLE:         <span class="num">4</span>,   <span class="cm">// 只改 style</span>
+  PROPS:         <span class="num">8</span>,   <span class="cm">// 只改 props（不含 class/style）</span>
+  FULL_PROPS:    <span class="num">16</span>,  <span class="cm">// props 有动态 key → 需全量 diff</span>
+  NEED_HYDRATE:  <span class="num">32</span>,  <span class="cm">// 事件绑定</span>
+  STABLE_FRAG:   <span class="num">64</span>,  <span class="cm">// 子节点顺序稳定</span>
+  KEYED_FRAG:    <span class="num">128</span>, <span class="cm">// 子节点有 key</span>
+  UNKEYED_FRAG:  <span class="num">256</span>, <span class="cm">// 子节点无 key</span>
+  DYNAMIC_SLOTS: <span class="num">512</span>, <span class="cm">// 动态插槽</span>
+};
+<span class="cm">// 通过 patchFlag，Vue 3 直接跳到具体要更新的属性类型，</span>
+<span class="cm">// 跳过 vnode.type 的比较、全量 props diff 等冗余步骤。</span></code></pre>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>三、编译器（模板 → 渲染函数）</h2>
+
+<pre><code><span class="cm">// 编译三阶段</span>
+Template String
+    ↓ <span class="kw">parse</span>       <span class="cm">// 词法分析 + 语法分析</span>
+    AST               <span class="cm">// 抽象语法树</span>
+    ↓ <span class="kw">transform</span>   <span class="cm">// 节点遍历、转换、优化（hoist、patchFlag）</span>
+    优化后的 AST
+    ↓ <span class="kw">generate</span>    <span class="cm">// 代码生成</span>
+    render 函数字符串 → <span class="kw">new</span> Function() → 可执行渲染函数</code></pre>
+
+<h3>3.1 parse：把模板变成 AST</h3>
+
+<pre><code><span class="cm">// &lt;div id="app"&gt;{{ msg }}&lt;/div&gt; 解析后：</span>
+{
+  type: NodeTypes.ELEMENT,
+  tag: <span class="str">'div'</span>,
+  props: [{ name: <span class="str">'id'</span>, value: { content: <span class="str">'app'</span> }}],
+  children: [
+    {
+      type: NodeTypes.INTERPOLATION,  <span class="cm">// {{ }}</span>
+      content: { type: NodeTypes.SIMPLE_EXPRESSION, content: <span class="str">'msg'</span> }
+    }
+  ]
+}</code></pre>
+
+<h3>3.2 transform：AST 优化的关键阶段</h3>
+
+<ul>
+  <li><strong>静态提升（hoist）：</strong>不依赖响应式数据的 vnode 提到 render 函数外面，每次渲染复用同一对象</li>
+  <li><strong>预字符串化：</strong>连续纯静态节点（> 20 个）直接序列化成 innerHTML 字符串</li>
+  <li><strong>缓存事件处理函数：</strong><code>@click="handler"</code> 编译成 <code>_cache[0] || (_cache[0] = e => ctx.handler(e))</code></li>
+  <li><strong>v-if / v-for 优化：</strong>由于 template 已知结构，Vue 可以推断静态部分</li>
+</ul>
+
+<h3>3.3 对比：Vue template vs JSX 的编译差异</h3>
+
+<table>
+  <tr><th></th><th>Vue SFC (template)</th><th>Vue JSX / React JSX</th></tr>
+  <tr><td><strong>编译时优化</strong></td><td>✅ 丰富（hoist、patchFlag、Block Tree）</td><td>⚠️ 有限（只有 Babel 层面的优化）</td></tr>
+  <tr><td><strong>灵活性</strong></td><td>⚠️ 受限于模板语法</td><td>✅ 完全 JavaScript 表达能力</td></tr>
+  <tr><td><strong>运行时体积</strong></td><td>✅ 小（编译时做了大量工作）</td><td>❌ 大（更多逻辑在运行时）</td></tr>
+  <tr><td><strong>学习成本</strong></td><td>⚠️ v-if/v-for/v-model 等指令语法</td><td>✅ 就是 JavaScript</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>四、组件系统</h2>
+
+<h3>4.1 组件的完整生命周期</h3>
+
+<pre><code><span class="cm">// setup 阶段（Composition API）</span>
+setup(props, { attrs, slots, emit, expose }) → 返回渲染上下文
+
+<span class="cm">// 生命周期时序（父子组件挂载）</span>
+父 setup()
+父 beforeMount()
+  子 setup()
+  子 beforeMount()
+  子 mounted()
+父 mounted()
+
+<span class="cm">// 更新时序</span>
+父 beforeUpdate()
+  子 beforeUpdate()
+  子 updated()
+父 updated()
+
+<span class="cm">// 卸载时序</span>
+父 beforeUnmount()
+  子 beforeUnmount()
+  子 unmounted()
+父 unmounted()</code></pre>
+
+<h3>4.2 props / emit / attrs / slots 的穿透关系</h3>
+
+<pre><code><span class="cm">// 组件接收的四个来源</span>
+setup(props, context) {
+  <span class="cm">// 1. props      →  父组件通过 :xxx 绑定 → 单向数据流</span>
+  <span class="cm">//    特点：只读（dev 环境警告）、有类型校验（运行时或 TS）</span>
+
+  <span class="cm">// 2. attrs      →  父组件透传的非 props 属性（id/class/style 等）</span>
+  <span class="cm">//    特点：默认继承到根元素，可用 inheritAttrs: false 关闭</span>
+
+  <span class="cm">// 3. slots      →  父组件传入的内容分发</span>
+  <span class="cm">//    特点：每个 slot 是返回 VNode 的函数（作用域在父组件）</span>
+
+  <span class="cm">// 4. emit       →  子传父的事件通道</span>
+  <span class="cm">//    特点：建议用 defineEmits 声明（TS 支持、文档化）</span>
+}</code></pre>
+
+<div class="warn">
+  <strong>⚠️ 透传坑：</strong>多根节点组件（Vue 3 支持 fragment）不会自动继承 <code>attrs</code>，必须手动 <code>v-bind="$attrs"</code>，否则 class/style 静默丢失。
+</div>
+
+<h3>4.3 provide / inject 的实现</h3>
+
+<pre><code><span class="cm">// 原理：组件实例上维护 provides 对象，向上查找原型链</span>
+<span class="cm">// inject 沿着 parent 链往上找 provides 中的 key</span>
+<span class="kw">function</span> <span class="fn">provide</span>(key, value) {
+  <span class="kw">const</span> instance = getCurrentInstance();
+  <span class="kw">let</span> provides = instance.provides;
+  <span class="kw">const</span> parentProvides = instance.parent?.provides;
+
+  <span class="cm">// 惰性原型继承：第一次 provide 时把 parent.provides 设为原型</span>
+  <span class="kw">if</span> (provides === parentProvides) {
+    provides = instance.provides = Object.create(parentProvides);
+  }
+  provides[key] = value;
+}
+
+<span class="kw">function</span> <span class="fn">inject</span>(key, defaultValue) {
+  <span class="kw">const</span> instance = getCurrentInstance();
+  <span class="kw">const</span> provides = instance.parent.provides;
+  <span class="kw">return</span> key <span class="kw">in</span> provides ? provides[key] : defaultValue;
+}</code></pre>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>五、Composition API 进阶模式</h2>
+
+<h3>5.1 组合函数（composables）的设计原则</h3>
+
+<pre><code><span class="cm">// ✅ 好的 composable：返回 ref，调用方可自由组合</span>
+<span class="kw">export function</span> <span class="fn">useMouse</span>() {
+  <span class="kw">const</span> x = ref(<span class="num">0</span>)
+  <span class="kw">const</span> y = ref(<span class="num">0</span>)
+  <span class="kw">const</span> cleanup = () =&gt; {
+    window.removeEventListener(<span class="str">'mousemove'</span>, onMouseMove)
+  }
+  onMounted(() =&gt; window.addEventListener(<span class="str">'mousemove'</span>, onMouseMove))
+  onUnmounted(cleanup)
+
+  <span class="kw">return</span> { x, y }  <span class="cm">// 返回 ref → 调用方可 watch、computed、传给子组件</span>
+}
+
+<span class="cm">// ❌ 不好的 composable：返回普通值，失去响应式关联</span>
+<span class="kw">export function</span> <span class="fn">useMouse</span>() {
+  <span class="kw">let</span> x = <span class="num">0</span>, y = <span class="num">0</span>;  <span class="cm">// ❌ 纯数值，调用方 watch 不了</span>
+  <span class="kw">return</span> { x, y }
+}</code></pre>
+
+<h3>5.2 带副作用的 composable —— 自动清理</h3>
+
+<pre><code><span class="kw">export function</span> <span class="fn">useEventListener</span>(target, event, handler) {
+  <span class="kw">const</span> cleanup = () =&gt; target.removeEventListener(event, handler)
+  onMounted(() =&gt; target.addEventListener(event, handler))
+
+  <span class="cm">// effectScope：当调用方组件卸载时，自动停止此 scope 内的所有 effect</span>
+  <span class="kw">const</span> scope = effectScope()
+  scope.run(() =&gt; {
+    watch(source, handler)   <span class="cm">// scope 内的 watch 会自动清理</span>
+    watchEffect(() =&gt; {})    <span class="cm">// scope 内的 watchEffect 也会自动清理</span>
+  })
+  onScopeDispose(() =&gt; scope.stop())  <span class="cm">// 组件卸载时停止 scope</span>
+  onUnmounted(cleanup)
+}</code></pre>
+
+<h3>5.3 shallowRef / shallowReactive 的使用时机</h3>
+
+<pre><code><span class="cm">// 场景：大型数据列表、与不可变数据配合（如 immer）</span>
+<span class="kw">const</span> list = shallowRef([]);  <span class="cm">// 只追踪 .value 的替换</span>
+
+<span class="cm">// ❌ 这样不会触发更新</span>
+list.value.push(newItem);
+
+<span class="cm">// ✅ 需要替换整个 .value</span>
+list.value = [...list.value, newItem];
+
+<span class="cm">// ⭐ 最佳实践：配合 triggerRef 手动触发</span>
+list.value.push(newItem);
+triggerRef(list);  <span class="cm">// 手动通知依赖更新</span></code></pre>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>六、性能优化实战</h2>
+
+<table>
+  <tr><th>手段</th><th>原理</th><th>适用场景</th></tr>
+  <tr>
+    <td><code>v-memo</code></td>
+    <td>依赖数组不变 → 跳过子树 diff</td>
+    <td>大列表中部分项更新</td>
+  </tr>
+  <tr>
+    <td><code>shallowRef</code></td>
+    <td>不深度追踪，只追踪 <code>.value</code> 替换</td>
+    <td>大数据、不可变更新模式</td>
+  </tr>
+  <tr>
+    <td><code>defineAsyncComponent</code></td>
+    <td>按需加载组件代码</td>
+    <td>路由级拆分、重型组件延迟加载</td>
+  </tr>
+  <tr>
+    <td><code>&lt;KeepAlive&gt;</code></td>
+    <td>缓存组件实例（LRU: max=10）</td>
+    <td>Tab 切换不销毁、表单状态保留</td>
+  </tr>
+  <tr>
+    <td><code>&lt;Suspense&gt;</code></td>
+    <td>异步依赖就绪前显示 fallback</td>
+    <td>异步组件、setup 内异步数据</td>
+  </tr>
+  <tr>
+    <td><code>v-once</code></td>
+    <td>只渲染一次，永不更新</td>
+    <td>完全静态的内容块</td>
+  </tr>
+  <tr>
+    <td><code>v-show</code> vs <code>v-if</code></td>
+    <td>display:none vs 不创建 DOM</td>
+    <td>频繁切换用 v-show，不频繁用 v-if</td>
+  </tr>
+</table>
+
+<h3>编译优化速查</h3>
+
+<pre><code><span class="cm">// 这些写法会被编译器自动优化，不需要你手动做：</span>
+&lt;div&gt;                             <span class="cm">→ 无动态内容 → hoist 到 render 外</span>
+&lt;div :id="dynamic"&gt;               <span class="cm">→ patchFlag = PROPS, 跳过 children diff</span>
+&lt;div :class="{ active: isActive }"&gt;<span class="cm">→ patchFlag = CLASS, 只检查 class</span>
+&lt;div @click="handler"&gt;            <span class="cm">→ 事件自动缓存，不会每次都创建新函数</span>
+
+<span class="cm">// 这些写法会阻止编译优化：</span>
+&lt;div :[dynamicKey]="val"&gt;         <span class="cm">→ 动态 key → FULL_PROPS（必须全量 diff）</span>
+&lt;Comp v-bind="someObj"&gt;           <span class="cm">→ 展开所有 props，无法静态标记</span>
+&lt;div v-html="raw"&gt;                <span class="cm">→ innerHTML，Vue 无法优化子内容</span></code></pre>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>七、Vue Router 4</h2>
+
+<pre><code><span class="cm">// 路由匹配的底层：路径 → 正则 → 优先级排序</span>
+<span class="kw">const</span> routes = [
+  { path: <span class="str">'/users/:id'</span>,   component: User },
+  { path: <span class="str">'/users/new'</span>,  component: NewUser },  <span class="cm">// 静态路径优先级高于动态参数</span>
+];
+
+<span class="cm">// 导航守卫的完整解析流程（洋葱模型）</span>
+<span class="cm">// 1. 导航触发</span>
+<span class="cm">// 2. 失活组件里调 beforeRouteLeave</span>
+<span class="cm">// 3. 全局 beforeEach</span>
+<span class="cm">// 4. 重用组件里调 beforeRouteUpdate</span>
+<span class="cm">// 5. 路由配置里调 beforeEnter</span>
+<span class="cm">// 6. 解析异步路由组件</span>
+<span class="cm">// 7. 被激活组件里调 beforeRouteEnter</span>
+<span class="cm">// 8. 全局 beforeResolve</span>
+<span class="cm">// 9. 导航确认</span>
+<span class="cm">// 10. 全局 afterEach</span>
+<span class="cm">// 11. DOM 更新触发</span>
+<span class="cm">// 12. beforeRouteEnter 中传给 next 的回调</span></code></pre>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>八、Pinia 状态管理</h2>
+
+<pre><code><span class="cm">// Pinia 本质：把 store 定义成一个 setup 函数，返回 ref/reactive/computed</span>
+<span class="kw">export const</span> useCounterStore = defineStore(<span class="str">'counter'</span>, () => {
+  <span class="kw">const</span> count = ref(<span class="num">0</span>)
+  <span class="kw">const</span> doubleCount = computed(() => count.value * <span class="num">2</span>)
+  <span class="kw">function</span> <span class="fn">increment</span>() { count.value++ }
+  <span class="kw">return</span> { count, doubleCount, increment }
+})
+
+<span class="cm">// Pinia 对比 Vuex 的改进：</span>
+<span class="cm">// - 不再是 mutation/action 分开，而是扁平化</span>
+<span class="cm">// - 完整的 TS 类型推导（defineStore 返回类型自动推断）</span>
+<span class="cm">// - 不再有 modules 嵌套，改为扁平 store 注册</span>
+<span class="cm">// - 支持 $patch、$reset、$subscribe（开发调试）</span>
+<span class="cm">// - devtools 集成更好（composition API timeline）</span></code></pre>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>九、Vue 3 生态全景</h2>
+
+<table>
+  <tr><th>生态位</th><th>推荐方案</th><th>备注</th></tr>
+  <tr><td>构建工具</td><td>Vite</td><td>Vue 官方出品，ESM 原生开发服务器</td></tr>
+  <tr><td>状态管理</td><td>Pinia</td><td>官方推荐，替代 Vuex</td></tr>
+  <tr><td>路由</td><td>Vue Router 4</td><td></td></tr>
+  <tr><td>SSR / SSG</td><td>Nuxt 3</td><td>文件路由、自动导入、服务端功能强大</td></tr>
+  <tr><td>UI 框架</td><td>Naive UI / Element Plus / Ant Design Vue / PrimeVue</td><td>各有侧重</td></tr>
+  <tr><td>测试</td><td>Vitest + Vue Test Utils + Playwright</td><td>Vitest 原生支持 Vite 配置</td></tr>
+  <tr><td>表单验证</td><td>VeeValidate + Zod</td><td>声明式验证 + 类型推导</td></tr>
+  <tr><td>国际化</td><td>vue-i18n 9</td><td></td></tr>
+  <tr><td>状态持久化</td><td>pinia-plugin-persistedstate</td><td></td></tr>
+  <tr><td>动画</td><td>VueUse Motion / GSAP</td><td></td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>十、学习路线</h2>
+
+<pre><code>阶段一：会用（1-2 月）
+  ├─ Vue 3 基础：模板语法、响应式、组件、Composition API
+  ├─ Vue Router 4 + Pinia
+  ├─ 做一个完整的中后台项目（CRUD + 权限 + 表单）
+  └─ Vite + 工程化配置
+
+阶段二：深入（2-3 月）
+  ├─ 手写 mini-vue（reactive / effect / computed / watch）
+  ├─ 手写虚拟 DOM + diff 算法
+  ├─ 读懂 Vue 3 源码核心（reactivity + runtime-core）
+  └─ TypeScript 在 Vue 中的深度使用（泛型组件、类型安全的 provide/inject）
+
+阶段三：精通（3-6 月）
+  ├─ 读懂 compiler-core（模板编译全流程）
+  ├─ 从零实现一个类 Vue 框架
+  ├─ Nuxt 3 全栈开发（SSR / ISR / Islands）
+  ├─ 性能诊断：首屏优化、大列表虚拟滚动、内存泄漏排查
+  └─ 参与 Vue 生态开源贡献（RFC、issue triage、PR）</code></pre>
+
+<h2>精通检验</h2>
+
+<div class="card">
+  <ol>
+    <li>解释 <code>ref(1)</code> 和 <code>reactive({value: 1})</code> 在模板中如何使用？哪个被自动解包？</li>
+    <li>Vue 3 的 <code>watchEffect</code> 如何自动收集依赖？如何在运行时知道哪些响应式值被访问了？</li>
+    <li>为什么 Vue 3 的 diff 用了<strong>最长递增子序列</strong>而不是简单遍历？写出 LIS 的 O(n log n) 实现。</li>
+    <li>在 <code>&lt;script setup&gt;</code> 中，如何暴露方法给父组件通过 <code>ref</code> 调用？</li>
+    <li><code>toRef</code> 和 <code>toRefs</code> 的区别？什么时候 <code>toRef</code> 会创建一个"假 ref"而不是保持原始关联？</li>
+    <li>Vue 3 的 <code>customRef</code> 能否用于实现一个带防抖的 ref？写出代码。</li>
+    <li>解释 <code>&lt;Teleport&gt;</code> 的实现原理——DOM 节点如何移到目标容器，又保持 Vue 组件树的逻辑关系？</li>
+    <li>一个 SFC 从 <code>.vue</code> 文件到浏览器可运行的 JS，经历了哪些转换步骤？（从 Vite 的视角）</li>
+  </ol>
+</div>
+
+<div class="tip">
+  <strong>🌟 心法：</strong>Vue 的精髓不是记住 <code>v-if</code> 的语法，而是理解它如何在<strong>编译时</strong>把模板预优化，在<strong>运行时</strong>用粒度极细的依赖追踪做到精准更新。这种"编译 + 响应式"双管齐下的设计哲学，才是 Vue 区别 React 的根本。
+</div>
+
+<div class="footer">
+  Generated with Claude Code · 2026-06-17
+</div>
+
+</body>
+</html>

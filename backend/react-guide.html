@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>精通 React：完整学习路线 &amp; 源码解析指南</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d2991d;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --orange: #f0883e;
+    --cyan: #39d2c0;
+    --react: #61dafb;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 2.2rem;
+    color: #fff;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+  h2 {
+    font-size: 1.6rem;
+    color: var(--react);
+    margin: 2.5rem 0 1rem;
+    padding-left: 0.5rem;
+    border-left: 4px solid var(--react);
+  }
+  h3 {
+    font-size: 1.2rem;
+    color: var(--accent);
+    margin: 1.5rem 0 0.8rem;
+  }
+  h4 {
+    color: var(--purple);
+    margin: 1rem 0 0.5rem;
+  }
+  p { margin-bottom: 0.8rem; }
+  ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+  li { margin-bottom: 0.3rem; }
+  strong { color: #fff; }
+  code {
+    background: #1c2128;
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9em;
+    color: var(--orange);
+  }
+  pre {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    overflow-x: auto;
+    margin-bottom: 1.2rem;
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; color: var(--text); }
+  .cm { color: #8b949e; font-style: italic; }
+  .kw { color: #ff7b72; }
+  .str { color: #a5d6ff; }
+  .fn { color: #d2a8ff; }
+  .num { color: #79c0ff; }
+  .type { color: #ffa657; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0 1.5rem;
+    font-size: 0.9rem;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 0.6rem 0.8rem;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: #1c2128; color: #fff; font-weight: 600; }
+  tr:nth-child(even) { background: #0d1117; }
+  tr:hover { background: #1c2128; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem 1.5rem;
+    margin: 1rem 0 1.5rem;
+  }
+  .note {
+    background: #1c2128;
+    border-left: 4px solid var(--yellow);
+    padding: 0.8rem 1rem;
+    margin: 1rem 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .warn {
+    background: #1c2128;
+    border-left: 4px solid var(--red);
+    padding: 0.8rem 1rem;
+    margin: 1rem 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .tip {
+    background: #1c2128;
+    border-left: 4px solid var(--green);
+    padding: 0.8rem 1rem;
+    margin: 1rem 0;
+    border-radius: 0 6px 6px 0;
+  }
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2rem 0;
+  }
+  .footer {
+    text-align: center;
+    color: var(--muted);
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .badge { display: inline-block; padding: 0.12em 0.5em; border-radius: 10px; font-size: 0.7rem; font-weight: 700; margin-left: 0.3rem; }
+  .b-new { background: #3fb95020; color: #3fb950; border: 1px solid #3fb95040; }
+  .b-old { background: #f8514920; color: #f85149; border: 1px solid #f8514940; }
+  .b-rc { background: #d2991d20; color: #d2991d; border: 1px solid #d2991d40; }
+</style>
+</head>
+<body>
+
+<h1>⚛️ 精通 React：完整学习路线 &amp; 源码解析指南</h1>
+
+<h2>前言：React 的三层境界</h2>
+
+<div class="card">
+  <table style="margin:0;">
+    <tr>
+      <th style="width:15%">境界</th>
+      <th style="width:25%">能力</th>
+      <th>衡量标准</th>
+    </tr>
+    <tr>
+      <td><strong>会用</strong></td>
+      <td>能独立完成中后台项目</td>
+      <td>熟练使用 Hooks、React Router、状态管理库（Zustand/Jotai）</td>
+    </tr>
+    <tr>
+      <td><strong>理解渲染机制</strong></td>
+      <td>能精准控制渲染、排查性能瓶颈</td>
+      <td>理解 Fiber 架构、能答出"为什么我的组件重渲染了"</td>
+    </tr>
+    <tr>
+      <td><strong>懂设计哲学</strong></td>
+      <td>能设计框架级方案、读源码如读文档</td>
+      <td>能手写 mini-react（Fiber + hooks + reconciliation）</td>
+    </tr>
+  </table>
+</div>
+
+<div class="note">
+  <strong>先明确一点：</strong>React 的核心模型是 <code>UI = f(state)</code>。它不假设状态如何管理、不假设用模板还是 JSX、不预设编译优化。React 的强项是<strong>"用 JavaScript 表达一切"</strong>的灵活性。你越懂 JavaScript，React 就越简单。
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>一、重新理解 React 的心智模型</h2>
+
+<h3>1.1 React 不是响应式，是快照（State → Snapshot → UI）</h3>
+
+<pre><code><span class="cm">// React 的核心循环：trigger → render → commit</span>
+
+<span class="kw">function</span> <span class="fn">Counter</span>() {
+  <span class="kw">const</span> [count, setCount] = useState(<span class="num">0</span>);
+
+  <span class="cm">// ❌ React 新手常犯的错误：以为 setState 后立即能读新值</span>
+  <span class="kw">function</span> <span class="fn">handleClick</span>() {
+    setCount(count + <span class="num">1</span>);
+    console.log(count);  <span class="cm">// 还是旧值！渲染还没发生</span>
+  }
+
+  <span class="cm">// ✅ 正确理解：count 是本次渲染的快照，不会在渲染中途突变</span>
+  <span class="cm">// 下一次渲染时，React 用新的 props/state 再跑一遍函数 → 得到新快照</span>
+
+  <span class="kw">return</span> &lt;button onClick={handleClick}&gt;{count}&lt;/button&gt;;
+}</code></pre>
+
+<h3>1.2 闭包陷阱——Hooks 时代最大的心智负担</h3>
+
+<pre><code><span class="kw">function</span> <span class="fn">Timer</span>() {
+  <span class="kw">const</span> [count, setCount] = useState(<span class="num">0</span>);
+
+  useEffect(() => {
+    <span class="kw">const</span> id = setInterval(() => {
+      <span class="cm">// ❌ 问题：这个 effect 只在 mount 时运行一次</span>
+      <span class="cm">//    闭包捕获的 count 永远是 0</span>
+      setCount(count + <span class="num">1</span>);  <span class="cm">// 永远是 setCount(0 + 1) = 1</span>
+    }, <span class="num">1000</span>);
+    <span class="kw">return</span> () => clearInterval(id);
+  }, []); <span class="cm">// ← 空依赖</span>
+
+  <span class="cm">// ✅ 解法一：函数式更新（推荐）</span>
+  setCount(<span class="fn">c</span> => c + <span class="num">1</span>);  <span class="cm">// c 总是最新值，不依赖闭包</span>
+
+  <span class="cm">// ✅ 解法二：正确声明依赖（但会导致 interval 反复创建/清理）</span>
+  <span class="cm">// 每次 count 变 → effect 重新运行 → clearInterval → setInterval</span>
+  <span class="cm">// 一般不推荐用于 interval</span>
+}, [count]);
+
+  <span class="cm">// ✅ 解法三：用 useRef 绕开闭包</span>
+  <span class="kw">const</span> countRef = useRef(count);
+  countRef.current = count;  <span class="cm">// 每次渲染更新 ref</span>
+  useEffect(() => {
+    <span class="kw">const</span> id = setInterval(() => setCount(countRef.current + <span class="num">1</span>), <span class="num">1000</span>);
+    <span class="kw">return</span> () => clearInterval(id);
+  }, []);</code></pre>
+
+<div class="warn">
+  <strong>⚠️ 核心原理：</strong>每次渲染都是一次独立的函数调用，Hooks 的值是那次调用时的快照。useEffect / useCallback / useMemo 的闭包里捕获的是<strong>创建时的值</strong>，不是最新值。这就是"过期闭包"问题的根源。
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>二、Hooks 深度解析（每个都要懂原理）</h2>
+
+<h3>2.1 useState —— 挂载时与更新时的不同行为</h3>
+
+<pre><code><span class="cm">// mini-react 中 useState 的简化实现</span>
+<span class="kw">let</span> currentFiber;          <span class="cm">// 当前正在处理的 Fiber 节点</span>
+<span class="kw">let</span> hookIndex = <span class="num">0</span>;         <span class="cm">// 当前 hook 在链表中的位置</span>
+
+<span class="kw">function</span> <span class="fn">useState</span>(initial) {
+  <span class="kw">const</span> fiber = currentFiber;
+  <span class="kw">const</span> hook = fiber.memoizedState
+    ? fiber.memoizedState[hookIndex]
+    : <span class="kw">null</span>;
+
+  <span class="cm">// === 挂载阶段 ===</span>
+  <span class="kw">if</span> (!hook) {
+    <span class="kw">const</span> state = <span class="kw">typeof</span> initial === <span class="str">'function'</span> ? initial() : initial;
+    fiber.memoizedState[hookIndex] = {
+      state,
+      queue: [],        <span class="cm">// 更新队列（setState 的调用）</span>
+      next: <span class="kw">null</span>,
+    };
+  }
+
+  <span class="kw">const</span> hookState = fiber.memoizedState[hookIndex];
+  <span class="kw">const</span> currentIdx = hookIndex;  <span class="cm">// 闭包捕获当前位置</span>
+
+  <span class="cm">// 派发更新</span>
+  <span class="kw">const</span> dispatch = <span class="fn">(action)</span> => {
+    <span class="kw">const</span> hook = fiber.memoizedState[currentIdx];
+    <span class="cm">// 加入更新队列</span>
+    hook.queue.push(
+      <span class="kw">typeof</span> action === <span class="str">'function'</span> ? action : () => action
+    );
+    <span class="cm">// 调度重渲染</span>
+    scheduleUpdate(fiber);
+  };
+
+  <span class="cm">// === 更新阶段：依次执行队列中的更新 ===</span>
+  <span class="kw">if</span> (fiber.isUpdating) {
+    <span class="kw">let</span> newState = hookState.state;
+    hookState.queue.forEach(<span class="fn">updateFn</span> => {
+      newState = updateFn(newState);  <span class="cm">// 依次应用，每个拿到的是上一个的结果</span>
+    });
+    hookState.state = newState;
+    hookState.queue = [];  <span class="cm">// 清空队列</span>
+  }
+
+  hookIndex++;
+  <span class="kw">return</span> [hookState.state, dispatch];
+}</code></pre>
+
+<h3>2.2 useEffect vs useLayoutEffect：微妙的时序差</h3>
+
+<pre><code><span class="cm">// 完整渲染流程中的时序：</span>
+
+render 阶段（可中断，可恢复，React 内部）
+  ↓ 计算新 Fiber 树，diff 旧 Fiber 树
+
+commit 阶段（不可中断，必须原子完成）
+  ├─ <strong>Before Mutation</strong>：getSnapshotBeforeUpdate (class)
+  ├─ <strong>Mutation</strong>：DOM 操作（增删改属性）
+  │    ├─ <span class="kw">useLayoutEffect 的 cleanup</span>  ← 同步执行！
+  │    └─ <span class="kw">useLayoutEffect 的 setup</span>    ← 同步执行，阻塞浏览器绘制！
+  └─ <strong>Layout</strong>：布局计算完成
+
+浏览器绘制（paint）← 用户看到新 UI
+
+<span class="kw">useEffect 的 cleanup + setup</span>  ← 异步执行，不阻塞绘制！
+
+<span class="cm">// 何时用哪个？</span>
+<span class="cm">// useLayoutEffect：需要同步读取/修改 DOM 布局 → 如测量元素尺寸、滚动位置</span>
+<span class="cm">// useEffect：数据请求、订阅、日志、副作用 → 99% 的情况用这个</span></code></pre>
+
+<h3>2.3 useMemo vs useCallback —— 别说"只是语法糖"</h3>
+
+<table>
+  <tr><th></th><th>useMemo</th><th>useCallback</th></tr>
+  <tr><td><strong>缓存什么</strong></td><td>值（任何类型）</td><td>函数引用</td></tr>
+  <tr><td><strong>本质</strong></td><td><code>useMemo(fn, deps) ≈ useState(() => fn())[0]</code>（但每次渲染重新求值）</td><td><code>useCallback(fn, deps) ≈ useMemo(() => fn, deps)</code></td></tr>
+  <tr><td><strong>真正用途</strong></td><td>避免昂贵的重复计算</td><td>保持函数引用稳定（避免子组件不必要的重渲染 + 作为 effect 依赖）</td></tr>
+  <tr><td><strong>不要滥用</strong></td><td>简单计算 memo 的开销 > 重算的开销</td><td>props 直接传函数也可以，只在子组件用了 <code>React.memo</code> 时才有效</td></tr>
+</table>
+
+<pre><code><span class="cm">// ❌ 滥用 useCallback：子组件没 memo，缓存等于白做</span>
+<span class="kw">const</span> handleClick = useCallback(() => { doSomething(id); }, [id]);
+<span class="kw">return</span> &lt;Child onClick={handleClick} /&gt;;  <span class="cm">// Child 没 memo → 还是会重渲染</span>
+
+<span class="cm">// ✅ 正确用法：配合 React.memo</span>
+<span class="kw">const</span> MemoChild = React.memo(Child);  <span class="cm">// memo 会比较 props 是否变化</span>
+<span class="kw">const</span> handleClick = useCallback(() => { doSomething(id); }, [id]);
+<span class="kw">return</span> &lt;MemoChild onClick={handleClick} /&gt;;  <span class="cm">// handleClick 稳定 → Child 不重渲染</span>
+
+<span class="cm">// ⭐ 更推荐的模式：把状态下沉（state down）</span>
+<span class="cm">// 不把 handleClick 传给深层组件，而是让深层组件自己管理自己的状态</span></code></pre>
+
+<h3>2.4 useRef —— 不只是"拿到 DOM 元素"</h3>
+
+<pre><code><span class="cm">// useRef 的三个核心用途：</span>
+
+<span class="cm">// 1. DOM 引用（最常见）</span>
+<span class="kw">const</span> inputRef = useRef&lt;HTMLInputElement&gt;(<span class="kw">null</span>);
+useEffect(() => { inputRef.current?.focus(); }, []);
+
+<span class="cm">// 2. 跨渲染保持可变值（不触发重渲染）</span>
+<span class="kw">const</span> prevCountRef = useRef(count);
+useEffect(() => { prevCountRef.current = count; });  <span class="cm">// 更新后保存</span>
+
+<span class="cm">// 3. 保存最新的回调引用（避免过期闭包）</span>
+<span class="kw">const</span> latestCallback = useRef(onChange);
+latestCallback.current = onChange;  <span class="cm">// 每次渲染更新</span>
+<span class="cm">// 在 effect 或事件处理器里始终调 latestCallback.current → 拿到的总是最新函数</span></code></pre>
+
+<h3>2.5 useReducer —— 复杂状态逻辑的正确选择</h3>
+
+<pre><code><span class="cm">// 不是 Redux 的替代品，而是 useState 的升级版</span>
+<span class="kw">function</span> <span class="fn">reducer</span>(state, action) {
+  <span class="kw">switch</span> (action.type) {
+    <span class="kw">case</span> <span class="str">'increment'</span>: <span class="kw">return</span> { ...state, count: state.count + <span class="num">1</span> };
+    <span class="kw">case</span> <span class="str">'decrement'</span>: <span class="kw">return</span> { ...state, count: state.count - <span class="num">1</span> };
+    <span class="kw">case</span> <span class="str">'reset'</span>:    <span class="kw">return</span> { count: action.payload };
+  }
+}
+
+<span class="cm">// 关键优势：dispatch 的引用是稳定的（不像 setState 来自闭包）</span>
+<span class="kw">const</span> [state, dispatch] = useReducer(reducer, { count: <span class="num">0</span> });
+<span class="cm">// dispatch 永远指向同一个函数 → 可以作为 effect 的依赖而不会导致重复执行</span></code></pre>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>三、Fiber 架构 —— React 的骨架</h2>
+
+<h3>3.1 为什么需要 Fiber？</h3>
+
+<pre><code><span class="cm">// 旧架构（Stack Reconciler）：递归遍历，不可中断</span>
+<span class="cm">// 一棵 10 万节点的树更新 → JS 线程阻塞数百毫秒 → 页面卡顿</span>
+
+<span class="cm">// Fiber 架构：可中断、可分片的工作单元</span>
+<span class="cm">// 每个 Fiber 节点是一个小任务，React 可以：</span>
+<span class="cm">//   1. 暂停当前工作（让出主线程给用户交互）</span>
+<span class="cm">//   2. 继续之前的工作</span>
+<span class="cm">//   3. 丢弃已完成的工作（如果有更高优先级的更新）</span></code></pre>
+
+<h3>3.2 Fiber 节点的数据结构</h3>
+
+<pre><code><span class="kw">type</span> Fiber = {
+  <span class="cm">// === 静态结构（对应组件树） ===</span>
+  tag: WorkTag,              <span class="cm">// 类型：FunctionComponent / ClassComponent / HostComponent...</span>
+  key: <span class="kw">null</span> | string,
+  type: any,                 <span class="cm">// 对于 HostComponent 是标签名，对于 FC 是函数本身</span>
+  stateNode: any,            <span class="cm">// 对应的 DOM 节点或类组件实例</span>
+
+  return: Fiber | <span class="kw">null</span>,      <span class="cm">// ← 父 Fiber（单向链表，return 指向父）</span>
+  child: Fiber | <span class="kw">null</span>,       <span class="cm">// → 第一个子 Fiber</span>
+  sibling: Fiber | <span class="kw">null</span>,     <span class="cm">// → 下一个兄弟 Fiber</span>
+
+  <span class="cm">// === 动态工作状态 ===</span>
+  pendingProps: any,         <span class="cm">// 新的 props</span>
+  memoizedProps: any,        <span class="cm">// 已生效的 props</span>
+  memoizedState: any,        <span class="cm">// 已生效的 state（hooks 链表挂在这）</span>
+  updateQueue: any,          <span class="cm">// 待处理的更新</span>
+
+  <span class="cm">// === 副作用 ===</span>
+  flags: Flags,              <span class="cm">// 副作用标记（Placement / Update / Deletion...）</span>
+  subtreeFlags: Flags,       <span class="cm">// 子树中所有副作用标记的汇总</span>
+  deletions: Fiber[] | <span class="kw">null</span>, <span class="cm">// 待删除的子节点</span>
+
+  <span class="cm">// === 调度优先级 ===</span>
+  lanes: Lanes,              <span class="cm">// 本节点的优先级</span>
+  childLanes: Lanes,         <span class="cm">// 子树中所有优先级的汇总</span>
+
+  <span class="cm">// === 双缓冲 ===</span>
+  alternate: Fiber | <span class="kw">null</span>,   <span class="cm">// 指向另一棵树中的对应节点（current ↔ workInProgress）</span>
+};</code></pre>
+
+<h3>3.3 双缓冲（Double Buffering）—— current 树 vs workInProgress 树</h3>
+
+<pre><code><span class="cm">// React 同时维护两棵 Fiber 树：</span>
+<span class="cm">//</span>
+<span class="cm">//  current tree       → 屏幕上当前显示的内容（已经提交的）</span>
+<span class="cm">//  workInProgress tree → 正在内存中构建的新版本</span>
+<span class="cm">//</span>
+<span class="cm">// 每个 Fiber 节点都有 .alternate 指向另一棵树中对应的节点</span>
+<span class="cm">// commit 完成后，两棵树角色互换（current ↔ workInProgress）</span>
+
+<span class="kw">function</span> <span class="fn">createWorkInProgress</span>(current, pendingProps) {
+  <span class="kw">let</span> workInProgress = current.alternate;
+  <span class="kw">if</span> (!workInProgress) {
+    <span class="cm">// 首次渲染：创建新的</span>
+    workInProgress = createFiber(current.tag, pendingProps, current.key);
+    workInProgress.alternate = current;
+    current.alternate = workInProgress;
+  } <span class="kw">else</span> {
+    <span class="cm">// 更新：复用了已有的 alternate，重置部分字段</span>
+    workInProgress.pendingProps = pendingProps;
+    workInProgress.flags = NoFlags;
+    workInProgress.subtreeFlags = NoFlags;
+    workInProgress.deletions = <span class="kw">null</span>;
+  }
+
+  <span class="cm">// 复用上次的状态（state / hooks 链表等）</span>
+  workInProgress.memoizedState = current.memoizedState;
+  <span class="kw">return</span> workInProgress;
+}</code></pre>
+
+<div class="tip">
+  <strong>为什么用双缓冲？</strong>在构建新树的过程中，旧树仍然完整可用（屏幕上的 UI 不受影响）。构建完成后一次性 commit（切换指针），整个过程原子且无闪烁。
+</div>
+
+<h3>3.4 workLoop —— 可中断的渲染循环</h3>
+
+<pre><code><span class="kw">function</span> <span class="fn">workLoop</span>(deadline) {
+  <span class="kw">let</span> shouldYield = <span class="kw">false</span>;
+
+  <span class="cm">// 深度优先遍历 Fiber 树，逐个处理每个节点</span>
+  <span class="kw">while</span> (nextUnitOfWork && !shouldYield) {
+    nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
+    shouldYield = deadline.timeRemaining() &lt; <span class="num">1</span>;  <span class="cm">// 时间片用完了，让出主线程</span>
+  }
+
+  <span class="kw">if</span> (!nextUnitOfWork && workInProgressRoot) {
+    <span class="cm">// 整棵树处理完毕 → 进入 commit 阶段</span>
+    commitRoot();
+  }
+
+  <span class="cm">// 如果还有工作没做完且需要让出 → 通过 scheduler 调度下一次继续</span>
+  <span class="kw">if</span> (nextUnitOfWork) {
+    requestIdleCallback(workLoop);
+  }
+}
+
+<span class="kw">function</span> <span class="fn">performUnitOfWork</span>(fiber) {
+  <span class="cm">// 1. beginWork：处理当前节点（diff props、调用组件函数、生成子节点）</span>
+  beginWork(fiber);
+
+  <span class="cm">// 2. 深度优先：有子节点 → 处理子节点</span>
+  <span class="kw">if</span> (fiber.child) <span class="kw">return</span> fiber.child;
+
+  <span class="cm">// 3. 没有子节点 → 回溯，完成节点（completeWork：创建 DOM、收集副作用）</span>
+  <span class="kw">let</span> next = fiber;
+  <span class="kw">while</span> (next) {
+    completeWork(next);
+    <span class="kw">if</span> (next.sibling) <span class="kw">return</span> next.sibling;  <span class="cm">// 有兄弟 → 处理兄弟</span>
+    next = next.return;  <span class="cm">// 没有兄弟 → 回到父节点</span>
+  }
+}</code></pre>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>四、Reconciliation（Diff）—— 精确理解</h2>
+
+<h3>4.1 Diff 的三条假设</h3>
+
+<pre><code><span class="cm">// React 的 diff 基于三个启发式假设（降低 O(n³) → O(n)）：</span>
+
+<span class="cm">// 假设 1：不同类型 → 整棵树重建</span>
+&lt;div&gt;  &lt;span /&gt;  &lt;/div&gt;          <span class="cm">// 旧</span>
+&lt;header&gt;  &lt;span /&gt;  &lt;/header&gt;      <span class="cm">// 新 → div → header，类型变了 → 整个子树卸载重建</span>
+
+<span class="cm">// 假设 2：通过 key 标识"同一个"元素</span>
+<span class="cm">// 没有 key → 按索引比较 → 列表重排会大量错误复用</span>
+<span class="cm">// 有 key   → 按 key 匹配 → 精确知道哪个移动了、哪个新增了/删除了</span>
+
+<span class="cm">// 假设 3：同类型元素 → 只更新变化的属性</span>
+&lt;div className="old" title="old" /&gt;
+&lt;div className="new" title="old" /&gt;  <span class="cm">→ 只更新 className</span></code></pre>
+
+<h3>4.2 key 的正确使用</h3>
+
+<pre><code><span class="cm">// ❌ 用 index 作 key（列表排序/增删时会错乱）</span>
+{list.map(<span class="fn">(item, index)</span> => &lt;Item key={index} {...item} /&gt;)}
+
+<span class="cm">// 问题：删除第 1 项 → index 全变了 → React 认为每一项都变了</span>
+<span class="cm">// → 可能触发不必要的不稳定（input 焦点丢失、动画错乱、state 错误复用）</span>
+
+<span class="cm">// ✅ 用稳定唯一 ID 作 key</span>
+{list.map(<span class="fn">item</span> => &lt;Item key={item.id} {...item} /&gt;)}
+
+<span class="cm">// ⭐ key 只在同一层兄弟节点间有意义，不是全局的</span></code></pre>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>五、状态管理：从 Context 到 Zustand</h2>
+
+<h3>5.1 选择状态管理方案的决策树</h3>
+
+<pre><code>你的状态是哪种？
+├─ 服务端缓存（API 响应）             → React Query / SWR
+├─ UI 状态（弹窗开关、表单值）         → useState / useReducer
+├─ 跨组件共享但非全局                 → Context（小心性能）
+├─ 全局状态，频繁更新                 → Zustand / Jotai
+├─ 复杂全局状态，需中间件/调试         → Zustand + immer + devtools
+└─ 非常复杂的状态、事件溯源            → XState（状态机）</code></pre>
+
+<h3>5.2 Zustand —— 当前社区首选（极简 API、无 boilerplate）</h3>
+
+<pre><code><span class="kw">import</span> { create } <span class="kw">from</span> <span class="str">'zustand'</span>;
+
+<span class="kw">const</span> useStore = create&lt;State&gt;(<span class="fn">(set, get)</span> => ({
+  count: <span class="num">0</span>,
+  users: [],
+
+  <span class="cm">// action 就是普通函数，没有 redux 的 type 常量</span>
+  increment: () => set(<span class="fn">s</span> => ({ count: s.count + <span class="num">1</span> })),
+  fetchUsers: <span class="kw">async</span> () => {
+    <span class="kw">const</span> users = <span class="kw">await</span> api.getUsers();
+    set({ users });  <span class="cm">// 异步也没问题</span>
+  },
+
+  <span class="cm">// 选择器避免不必要的重渲染</span>
+}));
+
+<span class="cm">// 组件中使用：精准订阅，只在 count 变时才重渲染</span>
+<span class="kw">const</span> count = useStore(<span class="fn">s</span> => s.count);
+<span class="kw">const</span> increment = useStore(<span class="fn">s</span> => s.increment);</code></pre>
+
+<h3>5.3 Context + useReducer 是否够用？——看场景</h3>
+
+<pre><code><span class="cm">// Context 的致命问题：任何值变化 → 所有消费者重渲染</span>
+<span class="cm">// 除非用 memo + useMemo 手动优化，但代码会变得很冗长</span>
+
+<span class="cm">// 决策规则：</span>
+<span class="cm">// Context + useReducer → 适用：少量消费者、状态更新不频繁（如主题、语言）</span>
+<span class="cm">// Zustand / Jotai      → 适用：高频更新、精准订阅、多 consumer（如购物车、表单）</span></code></pre>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>六、新的范式：React Server Components</h2>
+
+<h3>6.1 RSC 的核心思想：组件不在客户端运行</h3>
+
+<pre><code><span class="cm">// Server Component（无交互，在服务端渲染）</span>
+<span class="kw">async function</span> <span class="fn">ProductList</span>() {
+  <span class="kw">const</span> products = <span class="kw">await</span> db.query(<span class="str">'SELECT * FROM products'</span>);
+  <span class="cm">//        ↑ 直接在组件里查数据库！没有 API 层</span>
+  <span class="kw">return</span> (
+    &lt;ul&gt;
+      {products.map(<span class="fn">p</span> => (
+        &lt;li key={p.id}&gt;
+          {p.name}
+          &lt;AddToCartButton productId={p.id} /&gt;  <span class="cm">{/* Client Component */}</span>
+        &lt;/li&gt;
+      ))}
+    &lt;/ul&gt;
+  );
+}
+
+<span class="cm">// Client Component（有交互，在浏览器运行）</span>
+<span class="str">'use client'</span>;
+<span class="kw">function</span> <span class="fn">AddToCartButton</span>({ productId }) {
+  <span class="kw">const</span> [loading, setLoading] = useState(<span class="kw">false</span>);
+  <span class="kw">return</span> (
+    &lt;button onClick={<span class="kw">async</span> () => {
+      setLoading(<span class="kw">true</span>);
+      <span class="kw">await</span> addToCart(productId);
+      setLoading(<span class="kw">false</span>);
+    }}&gt;
+      {loading ? <span class="str">'Adding...'</span> : <span class="str">'Add to Cart'</span>}
+    &lt;/button&gt;
+  );
+}</code></pre>
+
+<h3>6.2 RSC vs SSR vs CSR —— 别再搞混</h3>
+
+<table>
+  <tr><th></th><th>CSR (客户端渲染)</th><th>SSR (服务端渲染)</th><th>RSC (React Server Components)</th></tr>
+  <tr><td><strong>HTML 生成</strong></td><td>空壳 HTML，JS 加载后渲染</td><td>服务端生成完整 HTML</td><td>服务端生成组件树（不是 HTML）</td></tr>
+  <tr><td><strong>水合</strong></td><td>不需要</td><td>需要 Hydration</td><td>不需要（Server Component 不水合）</td></tr>
+  <tr><td><strong>JS 体积</strong></td><td>大（全部组件代码）</td><td>大（全部组件代码）</td><td><strong>小</strong>（Server Component 代码不发送）</td></tr>
+  <tr><td><strong>直接访问后端</strong></td><td>❌ 需要 API</td><td>❌ 需要 API（getServerSideProps）</td><td>✅ 可直接查 DB、读文件</td></tr>
+  <tr><td><strong>交互</strong></td><td>✅</td><td>✅ 水合后</td><td>❌（需配合 Client Component）</td></tr>
+</table>
+
+<div class="tip">
+  <strong>⭐ RSC 改变了一切：</strong>以前 React 必须把所有组件代码打包发给浏览器。现在只有 Client Component（带交互的）的代码需要发给浏览器，Server Component 的逻辑完全在服务端执行，不增加客户端 JS 体积。这是 React 生态最根本的范式转移。
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>七、性能优化——别过早优化，但要知道怎么优化</h2>
+
+<h3>7.1 找出为什么重渲染——React DevTools Profiler</h3>
+
+<pre><code><span class="cm">// 在 Profiler 中录制 → 查看 Flamegraph → 找到渲染时间长的组件</span>
+<span class="cm">// React DevTools v4+ 可以高亮"为什么渲染"（渲染原因）</span>
+
+<span class="cm">// 常见原因：</span>
+<span class="cm">// 1. 父组件重渲染 → 子组件跟着重渲染（默认行为）</span>
+<span class="cm">// 2. Context 值变了 → 所有消费者重渲染</span>
+<span class="cm">// 3. Hooks 依赖变化 → useMemo / useCallback 重新计算</span></code></pre>
+
+<h3>7.2 优化手段速查表</h3>
+
+<table>
+  <tr><th>手段</th><th>原理</th><th>何时用</th><th>代价</th></tr>
+  <tr>
+    <td><code>React.memo</code></td>
+    <td>Shallow props 对比，不变就跳过</td>
+    <td>子组件纯展示、props 变化少</td>
+    <td>每次渲染做一次比较的开销</td>
+  </tr>
+  <tr>
+    <td><code>useMemo</code></td>
+    <td>缓存计算结果</td>
+    <td>计算开销大（>1ms）的派生值</td>
+    <td>内存 + 依赖比较开销</td>
+  </tr>
+  <tr>
+    <td><code>useCallback</code></td>
+    <td>稳定函数引用</td>
+    <td>函数作为 memo 子组件的 prop</td>
+    <td>同上</td>
+  </tr>
+  <tr>
+    <td><code>React.lazy</code></td>
+    <td>组件懒加载</td>
+    <td>路由级拆分、非首屏组件</td>
+    <td>首次加载时有网络 + 解析延迟</td>
+  </tr>
+  <tr>
+    <td><code>startTransition</code></td>
+    <td>标记为非紧急更新</td>
+    <td>搜索输入框（输入不卡）</td>
+    <td>需要 React 18+</td>
+  </tr>
+  <tr>
+    <td><code>useDeferredValue</code></td>
+    <td>延迟更新某值</td>
+    <td>列表过滤、搜索建议</td>
+    <td>可能短暂显示旧值</td>
+  </tr>
+  <tr>
+    <td>状态下沉（state down）</td>
+    <td>把状态放在需要的最小范围</td>
+    <td>表单值不必上升到全局</td>
+    <td>无运行时开销（最佳）</td>
+  </tr>
+  <tr>
+    <td>内容提升（lift content）</td>
+    <td>把不依赖状态的 JSX 作为 children 传入</td>
+    <td>弹窗包裹的列表内容不因为弹窗开关而重渲染</td>
+    <td>无运行时开销（最佳）</td>
+  </tr>
+</table>
+
+<h3>7.3 状态下沉 vs 内容提升——无开销的优化</h3>
+
+<pre><code><span class="cm">// ❌ 写法：弹窗的状态变化导致 ExpensiveTree 也重渲染</span>
+<span class="kw">function</span> <span class="fn">App</span>() {
+  <span class="kw">const</span> [open, setOpen] = useState(<span class="kw">false</span>);
+  <span class="kw">return</span> (
+    &lt;div&gt;
+      &lt;button onClick={() => setOpen(<span class="kw">true</span>)}&gt;Open&lt;/button&gt;
+      {open && &lt;Modal /&gt;}
+      &lt;ExpensiveTree /&gt;   <span class="cm">&lt;!-- App 重渲染 → ExpensiveTree 重渲染 --&gt;</span>
+    &lt;/div&gt;
+  );
+}
+
+<span class="cm">// ✅ 写法二选一：</span>
+<span class="cm">// 方案 A：状态下沉 — open 下放到真正需要的组件</span>
+<span class="kw">function</span> <span class="fn">App</span>() {
+  <span class="kw">return</span> (
+    &lt;div&gt;
+      &lt;ModalTrigger /&gt;      <span class="cm">&lt;!-- open 状态在这内部 --&gt;</span>
+      &lt;ExpensiveTree /&gt;     <span class="cm">&lt;!-- App 不会因 open 变化而渲染 --&gt;</span>
+    &lt;/div&gt;
+  );
+}
+
+<span class="cm">// 方案 B：内容提升 — ExpensiveTree 作为 children 传入</span>
+<span class="kw">function</span> <span class="fn">ModalWrapper</span>({ children }) {
+  <span class="kw">const</span> [open, setOpen] = useState(<span class="kw">false</span>);
+  <span class="kw">return</span> (
+    &lt;&gt;
+      &lt;button onClick={() => setOpen(<span class="kw">true</span>)}&gt;Open&lt;/button&gt;
+      {open && &lt;Modal /&gt;}
+      {children}      <span class="cm">&lt;!-- children 在父组件中创建，不受 ModalWrapper 重渲染影响 --&gt;</span>
+    &lt;/&gt;
+  );
+}
+
+<span class="kw">function</span> <span class="fn">App</span>() {
+  <span class="kw">return</span> (
+    &lt;ModalWrapper&gt;
+      &lt;ExpensiveTree /&gt;   <span class="cm">&lt;!-- 在 App 中创建，不会因为 ModalWrapper 的 open 变化而重建 --&gt;</span>
+    &lt;/ModalWrapper&gt;
+  );
+}</code></pre>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>八、React 18 / 19 新特性</h2>
+
+<h3>8.1 Concurrent Features（React 18）</h3>
+
+<pre><code><span class="cm">// useTransition：标记低优先级更新</span>
+<span class="kw">function</span> <span class="fn">SearchPage</span>() {
+  <span class="kw">const</span> [query, setQuery] = useState(<span class="str">''</span>);
+  <span class="kw">const</span> [isPending, startTransition] = useTransition();
+
+  <span class="kw">function</span> <span class="fn">handleInput</span>(e) {
+    <span class="cm">// 高优先级：立即更新输入框（用户打字不卡）</span>
+    setQuery(e.target.value);
+
+    <span class="cm">// 低优先级：搜索列表可以慢慢渲染，可以被中断</span>
+    startTransition(() => {
+      setSearchResults(filterData(e.target.value));
+    });
+  }
+
+  <span class="kw">return</span> (
+    &lt;&gt;
+      &lt;input value={query} onChange={handleInput} /&gt;
+      {isPending && &lt;Spinner /&gt;}
+      &lt;SearchResults /&gt;
+    &lt;/&gt;
+  );
+}
+
+<span class="cm">// useDeferredValue：延迟某个值的更新</span>
+<span class="kw">function</span> <span class="fn">List</span>({ query }) {
+  <span class="kw">const</span> deferredQuery = useDeferredValue(query);
+  <span class="cm">// query 立即更新 → 输入框流畅</span>
+  <span class="cm">// deferredQuery 可能落后 → 列表异步更新，可被中断</span>
+  <span class="kw">const</span> filtered = useMemo(() => filterData(deferredQuery), [deferredQuery]);
+  <span class="kw">return</span> results.map(...);
+}</code></pre>
+
+<h3>8.2 React 19 新特性速览</h3>
+
+<table>
+  <tr><th>特性</th><th>说明</th></tr>
+  <tr>
+    <td><strong>Actions</strong></td>
+    <td><code>useActionState</code> / <code>&lt;form action&gt;</code> → 表单原生支持异步提交、pending 状态、乐观更新，不依赖第三方库</td>
+  </tr>
+  <tr>
+    <td><strong>useOptimistic</strong></td>
+    <td>乐观更新：立即反映 UI 变化，后台异步提交，失败回滚</td>
+  </tr>
+  <tr>
+    <td><strong>use() API</strong></td>
+    <td>在渲染中解包 Promise / Context（不是 Hook，可在条件/循环中调用）</td>
+  </tr>
+  <tr>
+    <td><strong>Document Metadata</strong></td>
+    <td><code>&lt;title&gt;</code> / <code>&lt;meta&gt;</code> 可在组件中直接写，React 自动提升到 <code>&lt;head&gt;</code></td>
+  </tr>
+  <tr>
+    <td><strong>ref as prop</strong></td>
+    <td>不再需要 <code>forwardRef</code>，<code>ref</code> 作为普通 prop 传递</td>
+  </tr>
+  <tr>
+    <td><strong>Context 简写</strong></td>
+    <td><code>&lt;Theme value="dark"&gt;</code> 代替 <code>&lt;Theme.Provider value="dark"&gt;</code></td>
+  </tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>九、React 生态全景</h2>
+
+<table>
+  <tr><th>生态位</th><th>推荐方案</th><th>备注</th></tr>
+  <tr><td>框架（全栈）</td><td><strong>Next.js</strong><span class="badge b-new">首选</span></td><td>App Router + RSC + Server Actions</td></tr>
+  <tr><td>构建工具</td><td>Vite / Turbopack</td><td>CRA 已死，Vite 是标准</td></tr>
+  <tr><td>状态管理</td><td><strong>Zustand</strong> / Jotai</td><td>Redux 已是历史（除非老项目维护）</td></tr>
+  <tr><td>服务端状态</td><td><strong>TanStack Query</strong> (React Query) / SWR</td><td>缓存、去重、refetch、乐观更新</td></tr>
+  <tr><td>路由</td><td>Next.js App Router / TanStack Router</td><td>类型安全的路由</td></tr>
+  <tr><td>表单</td><td><strong>React Hook Form</strong> + Zod</td><td>非受控模式，性能最佳</td></tr>
+  <tr><td>样式</td><td>Tailwind CSS / CSS Modules / Panda CSS</td><td>Tailwind + clsx 是当前主流</td></tr>
+  <tr><td>组件库</td><td>shadcn/ui / Radix UI / Ant Design</td><td>shadcn/ui 是复制粘贴式，可控性强</td></tr>
+  <tr><td>动画</td><td>Framer Motion / react-spring</td><td></td></tr>
+  <tr><td>测试</td><td>Vitest + React Testing Library + Playwright</td><td></td></tr>
+  <tr><td>数据验证</td><td>Zod</td><td>运行时 + TS 类型二合一</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2>十、学习路线</h2>
+
+<pre><code>阶段一：会用（1-2 月）
+  ├─ JSX、组件、props、state、条件/列表渲染
+  ├─ 核心 Hooks：useState / useEffect / useContext / useRef / useReducer
+  ├─ React Router（SPA 路由）
+  ├─ 做一个完整项目（表单 + 列表 + 路由 + API 调用）
+  └─ React DevTools 的使用
+
+阶段二：深入理解（2-3 月）
+  ├─ 理解渲染机制：什么时候渲染、为什么渲染、如何阻止
+  ├─ useMemo / useCallback / React.memo 的正确使用
+  ├─ 闭包陷阱 & 过期引用 → 理解每个 Hook 的依赖数组本质
+  ├─ Context 的性能限制 → 学习 Zustand / Jotai
+  ├─ 手写 mini-react（Fiber + reconciliation + hooks）
+  └─ React Query 掌握（缓存失效、乐观更新、无限滚动）
+
+阶段三：精通（3-6 月）
+  ├─ 阅读 React 源码（scheduler / reconciler / hooks 实现）
+  ├─ Next.js App Router 全栈（RSC / Server Actions / 流式渲染）
+  ├─ 高级性能优化：Concurrent Features、虚拟滚动、Bundle 分析
+  ├─ 从零实现类 React 框架（涵盖 fiber、hooks、diff、scheduler）
+  └─ 参与 React 生态开源贡献</code></pre>
+
+<h2>精通检验</h2>
+
+<div class="card">
+  <ol>
+    <li>React 的 <code>setState</code> 在<strong>异步事件</strong>（setTimeout）和<strong>合成事件</strong>（onClick）中的批处理行为有何不同？React 18 的自动批处理如何改变了这一点？</li>
+    <li>为什么 Hooks 不能在条件语句中调用？画出 Fiber 节点上 Hook 链表的结构，解释原因。</li>
+    <li>解释 React 18 的 <code>useTransition</code> 和 <code>useDeferredValue</code> 的区别——它们都涉及"低优先级更新"，但使用场景不同。</li>
+    <li>写一个 <code>usePrevious</code> 的自定义 Hook，并解释为什么它必须在 useEffect 之后才生效（第二次渲染才能拿到上一次的值）。</li>
+    <li>什么是"tearing"（视觉撕裂）？React 18 的 Concurrent Rendering 如何通过"多版本一致性"解决它？</li>
+    <li>解释 Server Components 的序列化边界——为什么 Server Component 不能传函数作为 prop 给 Client Component？</li>
+    <li>React 的 SyntheticEvent 是什么？为什么 React 要在原生事件之上再包一层？事件池（event pooling）在哪个版本被移除？</li>
+    <li>一个组件在父组件中作为 <code>props.children</code> 传入，和直接在父组件 JSX 中写，在重渲染行为上有何本质区别？请结合 Fiber 架构解释。</li>
+  </ol>
+</div>
+
+<div class="tip">
+  <strong>🌟 心法：</strong>React 的精髓不是记住 <code>useState</code> 的语法，而是理解 <code>UI = f(state)</code> 这个函数式心智模型。每次渲染都是快照，Hook 的值是那次调用的值，Fiber 让渲染可中断——把这三个融会贯通，React 就不再神秘。
+</div>
+
+<div class="footer">
+  Generated with Claude Code · 2026-06-17
+</div>
+
+</body>
+</html>
