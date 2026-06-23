@@ -1,0 +1,2243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>精通 Node.js：完整学习路线 & OS 底层调用指南</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d2991d;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --orange: #f0883e;
+    --cyan: #39d2c0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 2.2rem;
+    color: #fff;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+  h2 {
+    font-size: 1.6rem;
+    color: var(--accent);
+    margin: 2.5rem 0 1rem;
+    padding-left: 0.5rem;
+    border-left: 4px solid var(--accent);
+  }
+  h3 {
+    font-size: 1.2rem;
+    color: var(--green);
+    margin: 1.5rem 0 0.8rem;
+  }
+  h4 {
+    color: var(--purple);
+    margin: 1rem 0 0.5rem;
+  }
+  p { margin-bottom: 0.8rem; }
+  ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+  li { margin-bottom: 0.3rem; }
+  strong { color: #fff; }
+  code {
+    background: #1c2128;
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9em;
+    color: var(--orange);
+  }
+  pre {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    overflow-x: auto;
+    margin-bottom: 1.2rem;
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    color: var(--text);
+  }
+  /* Syntax highlighting */
+  .kw { color: #ff7b72; }
+  .str { color: #a5d6ff; }
+  .num { color: #79c0ff; }
+  .cm { color: #8b949e; font-style: italic; }
+  .fn { color: #d2a8ff; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0 1.5rem;
+    font-size: 0.9rem;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 0.6rem 0.8rem;
+    text-align: left;
+  }
+  th {
+    background: #1c2128;
+    color: #fff;
+    font-weight: 600;
+  }
+  tr:nth-child(even) { background: #0d1117; }
+  tr:hover { background: #1c2128; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem 1.5rem;
+    margin: 1rem 0 1.5rem;
+  }
+  .note {
+    background: #1c2128;
+    border-left: 4px solid var(--yellow);
+    padding: 0.8rem 1rem;
+    margin: 1rem 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .warn {
+    background: #1c2128;
+    border-left: 4px solid var(--red);
+    padding: 0.8rem 1rem;
+    margin: 1rem 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .tip {
+    background: #1c2128;
+    border-left: 4px solid var(--green);
+    padding: 0.8rem 1rem;
+    margin: 1rem 0;
+    border-radius: 0 6px 6px 0;
+  }
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2rem 0;
+  }
+  .layer-diagram {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin: 1.5rem 0;
+  }
+  .layer {
+    padding: 0.8rem 1.2rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-family: monospace;
+    font-size: 0.9rem;
+  }
+  .l1 { background: #1b3a1b; border: 1px solid #2ea043; }
+  .l2 { background: #1b2e3a; border: 1px solid #1f6feb; }
+  .l3 { background: #2e1b3a; border: 1px solid #8957e5; }
+  .l4 { background: #3a1b1b; border: 1px solid #da3633; }
+  .section-nav {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .section-nav ul { list-style: none; padding: 0; }
+  .section-nav a { color: var(--accent); text-decoration: none; }
+  .section-nav a:hover { text-decoration: underline; }
+  .footer {
+    text-align: center;
+    color: var(--muted);
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .tag {
+    display: inline-block;
+    padding: 0.15em 0.6em;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-right: 0.3rem;
+  }
+  .tag-win { background: #0078d420; color: #60cdff; border: 1px solid #0078d440; }
+  .tag-linux { background: #fcc62420; color: #fcc624; border: 1px solid #fcc62440; }
+  .tag-both { background: #3fb95020; color: #3fb950; border: 1px solid #3fb95040; }
+
+  /* Event Loop Diagram */
+  .el-diagram {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1.2rem 0;
+    overflow-x: auto;
+  }
+  .el-cycle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    text-align: center;
+  }
+  .el-phase {
+    background: #1c2128;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 0.7rem 1rem;
+    min-width: 100px;
+    transition: transform 0.15s, border-color 0.15s;
+    cursor: default;
+  }
+  .el-phase:hover { transform: scale(1.05); border-color: var(--accent); }
+  .el-phase .en { font-size: 0.7rem; color: var(--muted); margin-top: 0.15rem; }
+  .el-phase .zh { font-size: 0.9rem; color: #fff; font-weight: 600; }
+  .el-phase.timers { border-color: #d2991d; }
+  .el-phase.iocb   { border-color: #f0883e; }
+  .el-phase.idle   { border-color: #8b949e; }
+  .el-phase.poll   { border-color: #3fb950; }
+  .el-phase.check  { border-color: #58a6ff; }
+  .el-phase.close  { border-color: #bc8cff; }
+  .el-arrow { color: var(--muted); font-size: 1.3rem; font-weight: 700; }
+  .el-microtask-box {
+    position: relative;
+    background: #2e1b3a;
+    border: 2px dashed #8957e5;
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    margin: 0.8rem auto;
+    text-align: center;
+    max-width: 600px;
+  }
+  .el-microtask-box .label {
+    color: #bc8cff;
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-bottom: 0.3rem;
+  }
+  .el-microtask-box .queue {
+    color: #c9d1d9;
+    font-size: 0.8rem;
+  }
+  .el-legend {
+    display: flex; flex-wrap: wrap; gap: 1rem;
+    font-size: 0.78rem; color: var(--muted);
+    margin-top: 0.5rem;
+  }
+  .el-legend span { display: flex; align-items: center; gap: 0.3rem; }
+  .el-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .dot-timers { background: #d2991d; }
+  .dot-iocb   { background: #f0883e; }
+  .dot-idle   { background: #8b949e; }
+  .dot-poll   { background: #3fb950; }
+  .dot-check  { background: #58a6ff; }
+  .dot-close  { background: #bc8cff; }
+
+  /* execution trace */
+  .exec-trace {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    margin: 1rem 0;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .exec-trace .hl { color: #ff7b72; font-weight: 700; }
+  .exec-trace .dim { color: #8b949e; }
+</style>
+</head>
+<body>
+
+<h1>🐢 精通 Node.js：完整学习路线 &amp; 操作系统底层调用指南</h1>
+
+<div class="section-nav">
+  <strong>📑 目录</strong>
+  <ul>
+    <li><a href="#part1">第一部分：Node.js 精通路线图</a> — 从语言基础到生产运维</li>
+    <li style="padding-left:1.2rem;font-size:0.9rem;"><a href="#s1-1">1.1 Event Loop 六阶段详解</a></li>
+    <li style="padding-left:1.2rem;font-size:0.9rem;"><a href="#s1-2">1.2 闭包 / 作用域详解</a></li>
+    <li style="padding-left:1.2rem;font-size:0.9rem;"><a href="#s1-3">1.3 原型链 / 类详解</a></li>
+    <li style="padding-left:1.2rem;font-size:0.9rem;"><a href="#s1-4">1.4 迭代器 / 生成器详解</a></li>
+    <li style="padding-left:1.2rem;font-size:0.9rem;"><a href="#s1-5">1.5 Streams</a></li>
+    <li style="padding-left:1.2rem;font-size:0.9rem;"><a href="#s1-6">1.6 模块系统</a></li>
+    <li><a href="#s2">二、Node.js 内核机制（分水岭）</a></li>
+    <li style="padding-left:1.2rem;font-size:0.9rem;"><a href="#s2-1">2.1 事件循环与异步 I/O（概要）</a></li>
+    <li style="padding-left:2.4rem;font-size:0.85rem;"><a href="#s2-1-1">线程池与 I/O 完成端口协作</a></li>
+    <li style="padding-left:2.4rem;font-size:0.85rem;"><a href="#s2-1-2">进线程池 vs 不进（完整清单）</a></li>
+    <li style="padding-left:2.4rem;font-size:0.85rem;"><a href="#s2-1-3">UV_THREADPOOL_SIZE 调优</a></li>
+    <li><a href="#part2">第二部分：调用操作系统底层接口</a> — 四个层级深度剖析</li>
+  </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<hr id="part1">
+<h1>第一部分：Node.js 精通路线图</h1>
+
+<h2>一、语言基础（门槛）</h2>
+<p>深入掌握 JavaScript/TypeScript 本身：</p>
+
+<table>
+  <tr><th>主题</th><th>精通标准</th></tr>
+  <tr>
+    <td><strong>异步模型</strong></td>
+    <td>Event Loop 六阶段时序了然于心；能解释 <code>process.nextTick</code> vs <code>setImmediate</code> vs <code>Promise.then</code> 的执行顺序</td>
+  </tr>
+  <tr>
+    <td><strong>闭包 / 作用域</strong></td>
+    <td>能解释 V8 的变量查找、词法环境、<code>[[Scopes]]</code>；写出无内存泄漏的闭包</td>
+  </tr>
+  <tr>
+    <td><strong>原型链 / 类</strong></td>
+    <td>理解 <code>__proto__</code> vs <code>prototype</code>，知道 ES6 class 的底层实现</td>
+  </tr>
+  <tr>
+    <td><strong>迭代器 / 生成器</strong></td>
+    <td>能手写 Symbol.iterator，用 generator 实现异步流程控制</td>
+  </tr>
+  <tr>
+    <td><strong>Proxy / Reflect</strong></td>
+    <td>能实现一个 reactive 系统（如 Vue3 原理）</td>
+  </tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 🔍 展开：异步模型 · Event Loop 六阶段详解 -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<h2 id="s1-1">1.1 Event Loop 六阶段详解</h2>
+
+<h3>🔁 循环顺序图</h3>
+
+<div class="el-diagram">
+  <div style="text-align:center;margin-bottom:0.6rem;color:var(--muted);font-size:0.82rem;">
+    每次循环从 <strong style="color:#d2991d;">① timers</strong> 开始，到 <strong style="color:#bc8cff;">⑥ close callbacks</strong> 结束<br>
+    <span style="font-size:0.75rem;">两个微任务插入点：每个阶段切换时清空 nextTick → Promise</span>
+  </div>
+  <div class="el-cycle">
+    <div class="el-phase timers">
+      <div class="zh">① timers</div>
+      <div class="en">定时器阶段</div>
+    </div>
+    <span class="el-arrow">→</span>
+    <div class="el-phase iocb">
+      <div class="zh">② I/O callbacks</div>
+      <div class="en">pending callbacks</div>
+    </div>
+    <span class="el-arrow">→</span>
+    <div class="el-phase idle">
+      <div class="zh">③ idle / prepare</div>
+      <div class="en">空闲·准备</div>
+    </div>
+    <span class="el-arrow">↻</span>
+    <div class="el-phase poll" style="border-width:3px;">
+      <div class="zh">④ poll</div>
+      <div class="en">轮询阶段 ⭐</div>
+    </div>
+    <span class="el-arrow">↻</span>
+    <div class="el-phase check">
+      <div class="zh">⑤ check</div>
+      <div class="en">setImmediate</div>
+    </div>
+    <span class="el-arrow">→</span>
+    <div class="el-phase close">
+      <div class="zh">⑥ close callbacks</div>
+      <div class="en">关闭回调</div>
+    </div>
+  </div>
+
+  <div class="el-microtask-box" style="margin-top:1rem;">
+    <div class="label">⚡ 微任务插队点（每个阶段切换时都会清空）</div>
+    <div class="queue">
+      ① 先清空 <strong style="color:#ff7b72;">nextTick 队列</strong>（全部）<br>
+      ② 再清空 <strong style="color:#58a6ff;">Promise 微任务队列</strong>（全部 · 直到队列为空）
+    </div>
+  </div>
+
+  <div class="el-legend" style="margin-top:0.8rem;">
+    <span><span class="el-dot dot-timers"></span> timers（setTimeout/setInterval 到期回调）</span>
+    <span><span class="el-dot dot-iocb"></span> I/O callbacks（系统错误回调）</span>
+    <span><span class="el-dot dot-idle"></span> idle/prepare（libuv 内部）</span>
+    <span><span class="el-dot dot-poll"></span> poll（I/O 轮询 ⭐）</span>
+    <span><span class="el-dot dot-check"></span> check（setImmediate）</span>
+    <span><span class="el-dot dot-close"></span> close（socket.close）</span>
+  </div>
+</div>
+
+
+<h3>📖 六个阶段详解</h3>
+
+<table>
+  <tr><th>阶段</th><th>做什么</th><th>关键 API</th></tr>
+  <tr>
+    <td><strong>① timers</strong></td>
+    <td>执行<strong>到期</strong>的定时器回调。不是精确时间触发——poll 结束后检查哪些定时器"时间到了"。</td>
+    <td><code>setTimeout</code><br><code>setInterval</code></td>
+  </tr>
+  <tr>
+    <td><strong>② I/O callbacks</strong></td>
+    <td>执行<strong>上一轮推迟的系统错误回调</strong>（如 TCP ECONNREFUSED）。普通 I/O 完成回调不在这。</td>
+    <td>系统错误<br>(ECONNREFUSED)</td>
+  </tr>
+  <tr>
+    <td><strong>③ idle / prepare</strong></td>
+    <td><strong>libuv 内部使用</strong>，Node 几乎不用。为 poll 做准备工作。</td>
+    <td>libuv handles</td>
+  </tr>
+  <tr>
+    <td><strong>④ poll</strong></td>
+    <td><strong>事件循环的心脏。</strong>(a) 计算阻塞时间，阻塞等待 I/O (epoll_wait/kqueue/IOCP)。(b) 执行就绪的 I/O 回调。如果 check 队列非空，立刻结束 poll 进入 check。</td>
+    <td><code>fs.*</code><br><code>net.*</code><br><code>http.*</code></td>
+  </tr>
+  <tr>
+    <td><strong>⑤ check</strong></td>
+    <td><strong>专属于 setImmediate</strong>。poll 之后立即执行。这就是 <code>setImmediate</code> 通常比 <code>setTimeout(fn, 0)</code> 先执行的根源。</td>
+    <td><code>setImmediate</code></td>
+  </tr>
+  <tr>
+    <td><strong>⑥ close</strong></td>
+    <td>执行关闭回调：<code>socket.on('close')</code>、<code>fs.close()</code> 等。</td>
+    <td><code>socket.close()</code><br><code>fs.close</code></td>
+  </tr>
+</table>
+
+<h3>⚡ 微任务插队机制（面试必考）</h3>
+
+<div class="warn">
+  <strong>核心规则：</strong>每个宏任务阶段执行完毕后、切换到下一阶段<strong>之前</strong>，Node 会先清空微任务队列。顺序严格为：<br>
+  <code style="font-size:1rem;display:block;text-align:center;margin-top:0.4rem;">
+    ① 清空 <strong>nextTick 队列</strong>（全部）→ ② 清空 <strong>Promise 微任务队列</strong>（全部）
+  </code>
+</div>
+
+
+<h3>🧪 经典面试题：逐行执行跟踪</h3>
+
+<pre><code><span class="cm">// 完整执行顺序是什么？</span>
+console.log(<span class="str">'1. sync start'</span>);
+
+setTimeout(() => console.log(<span class="str">'2. setTimeout'</span>), <span class="num">0</span>);
+
+setImmediate(() => console.log(<span class="str">'3. setImmediate'</span>));
+
+Promise.resolve()
+  .then(() => console.log(<span class="str">'4. Promise.then 1'</span>))
+  .then(() => console.log(<span class="str">'5. Promise.then 2'</span>));
+
+process.nextTick(() => console.log(<span class="str">'6. nextTick 1'</span>));
+process.nextTick(() => {
+  console.log(<span class="str">'7. nextTick 2'</span>);
+  process.nextTick(() => console.log(<span class="str">'8. nextTick 3 (嵌套)'</span>));
+});
+
+console.log(<span class="str">'9. sync end'</span>);</code></pre>
+
+<div class="card">
+  <strong style="color:#fff;">📋 执行顺序 + 详解：</strong>
+  <div class="exec-trace">
+<span class="dim">=== 同步代码（调用栈） ===</span>
+<span class="hl">1. sync start</span>              <span class="dim">← setTimeout → timers / setImmediate → check</span>
+<span class="hl">9. sync end</span>                <span class="dim">← Promise / nextTick → 微任务队列</span>
+
+<span class="dim">=== 同步栈清空 → 微任务检查 ===</span>
+<span class="hl">6. nextTick 1</span>              <span class="dim">← nextTick 优先于 Promise！</span>
+<span class="hl">7. nextTick 2</span>              <span class="dim">← 执行过程中追加了 8</span>
+<span class="hl">8. nextTick 3 (嵌套)</span>       <span class="dim">← nextTick 队列必须全部清空</span>
+<span class="hl">4. Promise.then 1</span>          <span class="dim">← nextTick 清空后 → Promise</span>
+<span class="hl">5. Promise.then 2</span>          <span class="dim">← .then 链入队</span>
+
+<span class="dim">=== 微任务清空 → Event Loop ===</span>
+                               <span class="dim">→ ① timers：setTimeout 到期</span>
+<span class="hl">2. setTimeout</span>              <span class="dim">→ ②③④ 流转...</span>
+                               <span class="dim">→ ⑤ check</span>
+<span class="hl">3. setImmediate</span>
+  </div>
+</div>
+
+<h3>⭐ 关键结论（背下来）</h3>
+
+<div class="tip">
+  <ol>
+    <li><strong>nextTick > Promise.then</strong>：每次微任务检查，先清空 nextTick 再清空 Promise</li>
+    <li><strong>setImmediate > setTimeout(0)</strong>：check 在 poll 之后立刻执行，setTimeout 等下轮 timers<br><em>例外：在 I/O 回调内部，setImmediate 永远先于 setTimeout——因为 I/O 回调在 poll 执行，poll 之后就是 check</em></li>
+    <li><strong>nextTick 嵌套不降级</strong>：回调里再调 nextTick，追加到当前队列，本轮清空（可能"饿死"事件循环）</li>
+    <li><strong>Promise.then 链式调用</strong>：每个 .then 是一次新的微任务入队，级联执行</li>
+  </ol>
+</div>
+
+<h3>📊 完整优先级对照</h3>
+
+<table>
+  <tr><th>API</th><th>队列</th><th>执行时机</th><th>优先级</th></tr>
+  <tr><td><code>process.nextTick</code></td><td>nextTick（Node 专属）</td><td>每阶段切换前</td><td><strong>🥇 最高</strong></td></tr>
+  <tr><td><code>Promise.then/catch/finally</code></td><td>微任务（V8）</td><td>每阶段切换前（nextTick 后）</td><td>🥈 第二</td></tr>
+  <tr><td><code>setImmediate</code></td><td>宏任务 → check</td><td>poll 之后</td><td>🥉 第三</td></tr>
+  <tr><td><code>setTimeout/setInterval</code></td><td>宏任务 → timers</td><td>到期后的 timers 阶段</td><td>🏅 第四</td></tr>
+  <tr><td><code>fs.readFile/net.connect</code></td><td>宏任务 → poll / I/O</td><td>I/O 完成后</td><td>🏅 因阶段而异</td></tr>
+</table>
+
+<!-- ═══ 1.1·附：setTimeout / setInterval / setImmediate 区别 ═══ -->
+<h3>⏱ setTimeout / setInterval / setImmediate 区别</h3>
+
+<h4>三句话讲清各自是什么</h4>
+
+<table>
+  <tr><th></th><th>setTimeout</th><th>setInterval</th><th>setImmediate</th></tr>
+  <tr>
+    <td><strong>干什么</strong></td>
+    <td>延迟 N 毫秒后<strong>执行一次</strong></td>
+    <td>每隔 N 毫秒<strong>重复执行</strong></td>
+    <td>在当前 Event Loop 本轮 poll 结束后<strong>立刻执行</strong></td>
+  </tr>
+  <tr>
+    <td><strong>归属阶段</strong></td>
+    <td>① timers</td>
+    <td>① timers</td>
+    <td>⑤ check</td>
+  </tr>
+  <tr>
+    <td><strong>最小延迟</strong></td>
+    <td>1ms（嵌套超过 5 层后强制 ≥4ms）</td>
+    <td>同 setTimeout</td>
+    <td>0ms，poll 结束后立刻跑</td>
+  </tr>
+  <tr>
+    <td><strong>精度</strong></td>
+    <td>不精确，受前面任务耗时影响</td>
+    <td>同左，还会<strong>累积漂移</strong></td>
+    <td>不依赖时间，依赖 poll 何时结束</td>
+  </tr>
+  <tr>
+    <td><strong>能取消吗</strong></td>
+    <td><code>clearTimeout(id)</code></td>
+    <td><code>clearInterval(id)</code></td>
+    <td><code>clearImmediate(id)</code></td>
+  </tr>
+  <tr>
+    <td><strong>浏览器有吗</strong></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>❌ Node.js 专属（浏览器用 <code>MessageChannel</code> 或 <code>Promise</code> 模拟）</td>
+  </tr>
+</table>
+
+<h4>setTimeout(fn, 0) vs setImmediate(fn) —— 面试送命题</h4>
+
+<p>这两者最常见的误区是"谁先执行"。答案：<strong>看调用位置</strong>。</p>
+
+<pre><code><span class="cm">// 在主模块顶层 —— 顺序不确定</span>
+setTimeout(() => console.log(<span class="str">'timeout'</span>), <span class="num">0</span>);
+setImmediate(() => console.log(<span class="str">'immediate'</span>));
+
+<span class="cm">// 实际输出随机：timeout → immediate 或 immediate → timeout</span>
+<span class="cm">// 原因：setTimeout(fn, 0) 被强制截断为 setTimeout(fn, 1)</span>
+<span class="cm">//       如果 Event Loop 启动耗时 > 1ms，则 setTimeout 先到期 → timeout 先执行</span>
+<span class="cm">//       如果 Event Loop 启动耗时 < 1ms，则 poll 阶段跳过 timers → immediate 先执行</span></code></pre>
+
+<pre><code><span class="cm">// 在 I/O 回调内部 —— setImmediate 永远先执行（确定性结果）</span>
+fs.readFile(<span class="str">'/tmp/test.txt'</span>, () => {
+  setTimeout(() => console.log(<span class="str">'timeout'</span>), <span class="num">0</span>);
+  setImmediate(() => console.log(<span class="str">'immediate'</span>));
+});
+
+<span class="cm">// 输出一定是：immediate → timeout</span>
+<span class="cm">// 原因：I/O 回调在 poll 阶段执行 → poll 之后立刻进入 check → setImmediate 先</span>
+<span class="cm">//        等下轮循环的 timers 阶段，setTimeout 才执行</span></code></pre>
+
+<div class="tip">
+  <strong>🎯 面试一句话：</strong>在 I/O 回调里，setImmediate 永远先于 setTimeout。在主模块顶层，顺序不确定——取决于 Event Loop 启动耗时。
+</div>
+
+<h4>setInterval 的两个坑</h4>
+
+<p><strong>坑一：不精确，会漂移。</strong>setInterval 的间隔是"上次回调开始之后"算，不是"上次回调结束之后"。如果回调执行了 50ms，那间隔就短了 50ms。</p>
+
+<pre><code><span class="kw">let</span> last = Date.now();
+setInterval(() => {
+  <span class="kw">const</span> now = Date.now();
+  console.log(<span class="str">'实际间隔'</span>, now - last, <span class="str">'ms'</span>);
+  last = now;
+  <span class="cm">// 模拟耗时操作</span>
+  <span class="kw">let</span> x = <span class="num">0</span>; <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; <span class="num">1e8</span>; i++) x++;
+}, <span class="num">100</span>);
+
+<span class="cm">// 输出：实际间隔 180ms、220ms...（间隔为 100 但被回调执行时间挤占，然后补偿）</span>
+<span class="cm">// 也可能：实际间隔 50ms、70ms...（上次回调霸占了时间槽，下次被立即触发）</span></code></pre>
+
+<p><strong>坑二：无视回调是否完成就堆叠。</strong>如果回调执行时间 > 间隔，新的回调会<strong>排队堆积</strong>（Node 会跳过已排队的回调，但不会取消还未排队的）。</p>
+
+<p><strong>更好的替代方案：</strong>用 <code>setTimeout</code> 递归模拟精确间隔：</p>
+
+<pre><code><span class="kw">function</span> <span class="fn">preciseInterval</span>(fn, delay) {
+  <span class="kw">let</span> running = <span class="kw">true</span>;
+  <span class="kw">function</span> <span class="fn">tick</span>() {
+    <span class="kw">if</span> (!running) <span class="kw">return</span>;
+    <span class="kw">const</span> start = Date.now();
+    fn();
+    <span class="kw">const</span> elapsed = Date.now() - start;
+    setTimeout(tick, Math.max(<span class="num">0</span>, delay - elapsed));  <span class="cm">// 校准：扣掉执行时间</span>
+  }
+  setTimeout(tick, delay);
+  <span class="kw">return</span> () => { running = <span class="kw">false</span>; };
+}</code></pre>
+
+<h4>什么时候用哪个 — 决策表</h4>
+
+<table>
+  <tr><th>需求</th><th>用</th><th>为什么</th></tr>
+  <tr>
+    <td>延迟执行一个任务</td>
+    <td><code>setTimeout</code></td>
+    <td>语义最直接</td>
+  </tr>
+  <tr>
+    <td>定期轮询 / 心跳</td>
+    <td><code>setTimeout 递归</code></td>
+    <td>避免 setInterval 的漂移和堆叠</td>
+  </tr>
+  <tr>
+    <td>I/O 回调后立刻处理结果</td>
+    <td><code>setImmediate</code></td>
+    <td>poll → check 路径最短，延迟最低</td>
+  </tr>
+  <tr>
+    <td>把耗时任务拆片，不阻塞 Event Loop</td>
+    <td><code>setImmediate</code> 或 <code>setTimeout(fn, 0)</code></td>
+    <td>每片执行完让出主线程给其他 I/O</td>
+  </tr>
+  <tr>
+    <td>精细化微任务调度</td>
+    <td><code>process.nextTick</code> / <code>Promise</code></td>
+    <td>比任何宏任务都先执行</td>
+  </tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 🔍 展开：闭包 / 作用域 -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<h2 id="s1-2">1.2 闭包 / 作用域详解</h2>
+
+<h3>🏠 一个比喻：函数的"老家"</h3>
+
+<p>每个函数都有一个"老家"——就是它<strong>被定义时所在的那个代码块</strong>。不管这个函数后来被扔到哪儿去调用，它永远记得老家里的变量。</p>
+
+<p>这就好比一个人出生在上海，长大后去了北京工作——他依然知道自己上海老家有哪些东西（爸妈、房子、儿时玩具）。这就是<strong>词法作用域</strong>的核心：函数能访问什么变量，只取决于它<strong>在哪儿被定义的</strong>，不取决于在哪儿被调用。</p>
+
+<div class="card">
+  <strong style="color:#fff;">一句话总结：</strong>闭包 = 函数 + 它能记住的周围的变量。闭包不是 JS 故意设计的特性，而是词法作用域的自然结果——只要你把函数定义在另一个函数里面，闭包就自动产生了。
+</div>
+
+<h3>🔗 看一个最简单的例子</h3>
+
+<pre><code><span class="kw">function</span> <span class="fn">makeGreeter</span>(name) {
+  <span class="kw">const</span> greeting = <span class="str">'你好，'</span>;
+  <span class="cm">// ↓ innerGreet 定义在这里，"老家"是 makeGreeter 内部</span>
+  <span class="kw">return function</span> <span class="fn">innerGreet</span>() {
+    console.log(greeting + name);  <span class="cm">// 用到了"老家"的 greeting 和 name</span>
+  };
+}
+
+<span class="kw">const</span> greetXiaoMing = makeGreeter(<span class="str">'小明'</span>);
+<span class="cm">// makeGreeter 已经执行完了，按理说 greeting 和 name 应该销毁了...</span>
+greetXiaoMing();  <span class="cm">// "你好，小明"  ← 但 innerGreet 还"记得"它们！</span></code></pre>
+
+<p>为什么 <code>makeGreeter</code> 都跑完了，<code>greeting</code> 和 <code>name</code> 还在？因为 <code>innerGreet</code> 把老家带在身上——这就是闭包。</p>
+
+<h3>📦 闭包最常见的用途：创建私有变量</h3>
+
+<p>JS 没有 private 关键字的时候，全靠闭包实现：</p>
+
+<pre><code><span class="kw">function</span> <span class="fn">createCounter</span>() {
+  <span class="kw">let</span> count = <span class="num">0</span>;  <span class="cm">// 这个变量外面摸不到</span>
+  <span class="kw">return</span> {
+    increment: () => ++count,   <span class="cm">// 只能通过这两个方法操作</span>
+    getCount:  () => count,
+  };
+}
+
+<span class="kw">const</span> counter = createCounter();
+counter.increment();
+counter.increment();
+console.log(counter.getCount());  <span class="cm">// 2</span>
+<span class="cm">// console.log(counter.count);   // undefined ← 外面看不到 count</span></code></pre>
+
+<h3>🔍 变量查找：从里往外找，就近原则</h3>
+
+<p>当你在函数里用到一个变量，JS 引擎怎么找到它？很简单：</p>
+
+<pre><code><span class="kw">const</span> globalVar = <span class="str">'我是全局'</span>;
+
+<span class="kw">function</span> <span class="fn">outer</span>() {
+  <span class="kw">const</span> outerVar = <span class="str">'我是外层'</span>;
+
+  <span class="kw">function</span> <span class="fn">inner</span>() {
+    <span class="kw">const</span> innerVar = <span class="str">'我是内层'</span>;
+    console.log(innerVar);   <span class="cm">// ① 先在自己这层找 → 找到了</span>
+    console.log(outerVar);   <span class="cm">// ② 自己没找到 → 往上一层找 → 找到了</span>
+    console.log(globalVar);  <span class="cm">// ③ 再往上 → 找到了</span>
+    console.log(nonExist);   <span class="cm">// ④ 找到最外层都没有 → ReferenceError 💥</span>
+  }
+
+  inner();
+}
+
+outer();</code></pre>
+
+<p>这个从里往外一层层找的链条就是<strong>作用域链</strong>。规则很朴素：<strong>就近覆盖，内层优先</strong>——如果里外有同名变量，里层的会"遮蔽"外层的。</p>
+
+<div class="warn">
+  <strong>⚠️ 关键认知：</strong>闭包查找变量走的是<strong>定义时的层级关系</strong>（源代码里谁套在谁里面），不是运行时的调用关系。B 函数调用了 A 函数，不代表 A 能访问 B 的变量——A 只看自己的"老家"。
+</div>
+
+<h3>💀 闭包的内存问题：什么时候会翻车</h3>
+
+<p>闭包本身不会泄漏内存。问题出在<strong>闭包活得太久，还抓着一些它不需要的大东西</strong>。</p>
+
+<h4>❌ 场景一：无心抓了大对象</h4>
+
+<pre><code><span class="kw">function</span> <span class="fn">processLargeData</span>(data) {
+  <span class="kw">const</span> hugeBuffer = Buffer.alloc(<span class="num">100</span> * <span class="num">1024</span> * <span class="num">1024</span>); <span class="cm">// 100MB</span>
+
+  <span class="kw">const</span> getFirstLine = () => data.split(<span class="str">'\n'</span>)[<span class="num">0</span>];  <span class="cm">// 只需要 data</span>
+
+  <span class="cm">// ❌ getFirstLine 和 hugeBuffer 在同一个"老家"</span>
+  <span class="cm">//    即使 getFirstLine 根本没用到 hugeBuffer，GC 也可能不敢回收它</span>
+
+  <span class="kw">return</span> getFirstLine;
+}</code></pre>
+
+<h4>✅ 修复：把大对象放到闭包定义之后</h4>
+
+<pre><code><span class="kw">function</span> <span class="fn">processLargeData</span>(data) {
+  <span class="kw">const</span> getFirstLine = () => data.split(<span class="str">'\n'</span>)[<span class="num">0</span>];  <span class="cm">// 先定义闭包</span>
+
+  <span class="cm">// ✅ hugeBuffer 在后面，不在 getFirstLine 的"老家"里</span>
+  <span class="kw">const</span> hugeBuffer = Buffer.alloc(<span class="num">100</span> * <span class="num">1024</span> * <span class="num">1024</span>);
+  doSomething(hugeBuffer);
+
+  <span class="kw">return</span> getFirstLine;
+}</code></pre>
+
+<h4>❌ 场景二：事件监听忘了关</h4>
+
+<pre><code><span class="kw">class</span> Connection {
+  <span class="kw">constructor</span>(socket) {
+    <span class="kw">this</span>.socket = socket;
+    <span class="kw">this</span>.handleData = (data) => {           <span class="cm">// 箭头函数 = 闭包</span>
+      <span class="kw">this</span>.process(data);                    <span class="cm">// 持有 this → Connection 实例</span>
+    };
+    socket.on(<span class="str">'data'</span>, <span class="kw">this</span>.handleData);
+  }
+  <span class="cm">// ❌ socket 上的监听器持有 handleData → handleData 持有 this</span>
+  <span class="cm">//    → 只要 socket 还活着，Connection 实例就永远无法被 GC</span>
+}</code></pre>
+
+<h4>✅ 修复：提供清理方法，解绑再丢弃</h4>
+
+<pre><code><span class="kw">class</span> Connection {
+  <span class="kw">constructor</span>(socket) {
+    <span class="kw">this</span>.socket = socket;
+    <span class="kw">this</span>.handleData = (data) => <span class="kw">this</span>.process(data);
+    socket.on(<span class="str">'data'</span>, <span class="kw">this</span>.handleData);
+  }
+  <span class="fn">destroy</span>() {
+    <span class="kw">this</span>.socket.off(<span class="str">'data'</span>, <span class="kw">this</span>.handleData);  <span class="cm">// ✅ 断开引用链</span>
+    <span class="kw">this</span>.socket = <span class="kw">null</span>;
+  }
+}</code></pre>
+
+<h4>❌ 场景三：定时器里的闭包——你以为丢了，其实还在</h4>
+
+<pre><code><span class="kw">let</span> server = <span class="kw">new</span> HeavyServer();
+
+setInterval(() => {
+  console.log(server.getStatus());  <span class="cm">// 闭包捕获了 server</span>
+}, <span class="num">1000</span>);
+
+<span class="cm">// 你"以为"这样可以释放：</span>
+server = <span class="kw">null</span>;  <span class="cm">// ❌ 无效！定时器里的箭头函数还抓着原来的 server</span></code></pre>
+
+<div class="tip">
+  <strong>✅ 正确做法：</strong>先 <code>clearInterval(id)</code>，再 <code>server = null</code>。定时器本身不死，谁也收不走里面的变量。
+</div>
+
+<h3>✅ 三条实用守则</h3>
+
+<div class="tip">
+  <ol>
+    <li><strong>闭包尽量"小"</strong>：把闭包定义在刚好需要那些变量的位置，不要随手写在函数最外层</li>
+    <li><strong>用完要"断"</strong>：事件监听 <code>off</code>、定时器 <code>clearInterval</code>、<code>setTimeout</code> 用完就 <code>clearTimeout</code></li>
+    <li><strong>全局的闭包 ≈ 永远不死的闭包</strong>：全局变量、模块级变量上的闭包几乎等于永久持有引用，写的时候多留个心眼</li>
+  </ol>
+</div>
+
+<div class="note">
+  <strong>💡 记一句话就够了：</strong>闭包是"函数出生证明"——在哪儿出生，就拥有哪儿的变量访问权，终身有效。写闭包时问自己：<strong>它要活多久？它抓着的东西有多大？</strong>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 🔍 展开：原型链 / 类 -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<h2 id="s1-3">1.3 原型链 / 类详解</h2>
+
+<p>JS 的继承不走传统的"类继承"路线，而是<strong>原型继承</strong>——对象直接链到另一个对象，找不到的属性沿着链往上找。没有类拷贝，只有链式查找。</p>
+
+<p>理解原型链只需要搞清两个东西：<strong><code>prototype</code></strong>（函数上的共享仓库）和 <strong><code>__proto__</code></strong>（每个对象上的查找指针）。别被名字迷惑，看代码就清楚了：</p>
+
+<h3>👁️ 直接看代码，比文字好理解</h3>
+
+<pre><code><span class="kw">function</span> <span class="fn">Person</span>(name) {
+  <span class="kw">this</span>.name = name;               <span class="cm">// 每个实例自己的属性</span>
+}
+
+<span class="cm">// 挂在 Person.prototype 上的方法，所有实例共享</span>
+Person.prototype.sayHi = <span class="kw">function</span>() {
+  console.log(<span class="str">'你好，我是'</span> + <span class="kw">this</span>.name);
+};
+
+<span class="kw">const</span> alice = <span class="kw">new</span> Person(<span class="str">'Alice'</span>);
+<span class="kw">const</span> bob   = <span class="kw">new</span> Person(<span class="str">'Bob'</span>);
+
+<span class="cm">// 关键关系：</span>
+console.log(alice.__proto__ === Person.prototype);  <span class="cm">// true ← 核心等式！</span>
+<span class="cm">// alice 的"备用查找源" 就是 Person 的"共享方法仓库"</span>
+
+<span class="cm">// 属性查找：</span>
+console.log(alice.name);    <span class="cm">// 'Alice'  ← 自己就有，直接用</span>
+console.log(alice.sayHi);   <span class="cm">// function ← 自己没有，沿着 __proto__ 找到 Person.prototype.sayHi</span>
+
+<span class="cm">// 方法共享验证：</span>
+console.log(alice.sayHi === bob.sayHi);  <span class="cm">// true ← 同一个函数，不是每个实例复制一份</span></code></pre>
+
+<div class="note">
+  <strong>📌 记住这个等式就够了：</strong><code>实例.__proto__ === 构造函数.prototype</code>。理解了这一句，原型链就通了一半。
+</div>
+
+<h3>⛓️ 原型链：找不到就一直往上找</h3>
+
+<p>JS 的属性查找就是沿着 <code>__proto__</code> 一层层往上爬，直到找到或者爬到顶（<code>null</code>）。</p>
+
+<pre><code><span class="cm">// 延续上面的 Person 例子</span>
+console.log(alice.__proto__);                    <span class="cm">// Person.prototype</span>
+console.log(alice.__proto__.__proto__);           <span class="cm">// Object.prototype</span>
+console.log(alice.__proto__.__proto__.__proto__); <span class="cm">// null ← 到头了</span>
+
+<span class="cm">// 所以 alice 可以用 hasOwnProperty——它不在 Person.prototype 上，在 Object.prototype 上</span>
+console.log(alice.hasOwnProperty(<span class="str">'name'</span>));  <span class="cm">// true ← 沿着原型链在 Object.prototype 上找到的</span></code></pre>
+
+<div class="tip">
+  <strong>原型链终点：</strong>所有普通对象的原型链最终都通向 <code>Object.prototype</code>，然后 <code>Object.prototype.__proto__ === null</code>。<code>null</code> 就是这条链的终点——找不到就返回 <code>undefined</code>。
+</div>
+
+<h3>🔄 ES6 class = 原型链的语法糖</h3>
+
+<p><code>class</code> 关键字没有创造新的继承机制，它只是把上面的 <code>function</code> + <code>prototype</code> 写法<strong>包装得更像 Java/C++</strong>。底层一模一样。</p>
+
+<h4>class 写法 vs 它背后的真相</h4>
+
+<pre><code><span class="cm">// ===== class 写法（你写的）=====</span>
+<span class="kw">class</span> Animal {
+  <span class="kw">constructor</span>(name) {
+    <span class="kw">this</span>.name = name;
+  }
+  speak() {
+    console.log(<span class="kw">this</span>.name + <span class="str">' 叫了一声'</span>);
+  }
+}
+
+<span class="kw">class</span> Dog <span class="kw">extends</span> Animal {
+  <span class="kw">constructor</span>(name, breed) {
+    <span class="kw">super</span>(name);      <span class="cm">// ← 相当于 Animal.call(this, name)</span>
+    <span class="kw">this</span>.breed = breed;
+  }
+  speak() {
+    console.log(<span class="kw">this</span>.name + <span class="str">' 汪汪叫'</span>);
+  }
+}
+
+<span class="kw">const</span> wangcai = <span class="kw">new</span> Dog(<span class="str">'旺财'</span>, <span class="str">'柴犬'</span>);
+wangcai.speak();  <span class="cm">// 旺财 汪汪叫</span></code></pre>
+
+<pre><code><span class="cm">// ===== 底层实际执行的事（等价的原型链写法）=====</span>
+
+<span class="kw">function</span> <span class="fn">Animal</span>(name) {
+  <span class="kw">this</span>.name = name;
+}
+Animal.prototype.speak = <span class="kw">function</span>() {
+  console.log(<span class="kw">this</span>.name + <span class="str">' 叫了一声'</span>);
+};
+
+<span class="kw">function</span> <span class="fn">Dog</span>(name, breed) {
+  Animal.call(<span class="kw">this</span>, name);   <span class="cm">// ← super(name) 就是这个</span>
+  <span class="kw">this</span>.breed = breed;
+}
+
+<span class="cm">// ↓ extends 就是这两步：</span>
+Dog.prototype = Object.create(Animal.prototype);  <span class="cm">// ① Dog.prototype 的原型指向 Animal.prototype</span>
+Dog.prototype.constructor = Dog;                   <span class="cm">// ② 修正 constructor 指向</span>
+
+Dog.prototype.speak = <span class="kw">function</span>() {
+  console.log(<span class="kw">this</span>.name + <span class="str">' 汪汪叫'</span>);
+};</code></pre>
+
+<div class="card">
+  <strong style="color:#fff;">🔑 class 三个关键字的底层等价：</strong>
+  <table style="margin:0.5rem 0 0;">
+    <tr><td><code>constructor()</code></td><td>= 构造函数本身</td></tr>
+    <tr><td><code>method()</code></td><td>= <code>Constructor.prototype.method = function()</code></td></tr>
+    <tr><td><code>extends</code></td><td>= <code>Child.prototype = Object.create(Parent.prototype)</code></td></tr>
+    <tr><td><code>super()</code></td><td>= <code>Parent.call(this, ...)</code></td></tr>
+  </table>
+</div>
+
+<h3>🔬 instanceof：沿着原型链找人</h3>
+
+<p><code>instanceof</code> 不关心你在哪个构造函数里出生，它只做一件事：<strong>沿着右边的 <code>prototype</code> 在左边的原型链上找</strong>。</p>
+
+<pre><code><span class="kw">const</span> arr = [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>];
+
+console.log(arr <span class="kw">instanceof</span> Array);     <span class="cm">// true  ← arr.__proto__ 链上有 Array.prototype</span>
+console.log(arr <span class="kw">instanceof</span> Object);    <span class="cm">// true  ← arr.__proto__.__proto__ 是 Object.prototype</span>
+console.log(arr <span class="kw">instanceof</span> Function);  <span class="cm">// false ← Function.prototype 不在 arr 的原型链上</span></code></pre>
+
+<h3>🔬 getPrototypeOf vs typeof：两个容易搞混的东西</h3>
+
+<p>这两个 API 名字里都有个"型"的意思，但问的问题完全不同：</p>
+
+<table>
+  <tr><th></th><th><code>typeof val</code></th><th><code>Object.getPrototypeOf(val)</code></th></tr>
+  <tr>
+    <td><strong>问什么</strong></td>
+    <td>"你是哪种数据？"</td>
+    <td>"你的原型是谁？"</td>
+  </tr>
+  <tr>
+    <td><strong>返回值</strong></td>
+    <td>一个<strong>字符串</strong>（<code>'object'</code>, <code>'function'</code> 等）</td>
+    <td>一个<strong>对象</strong>或 <strong><code>null</code></strong></td>
+  </tr>
+  <tr>
+    <td><strong>查什么链</strong></td>
+    <td>不查链，只看自身的 <code>[[Class]]</code></td>
+    <td>查原型链——返回 <code>obj.__proto__</code></td>
+  </tr>
+</table>
+
+<pre><code><span class="cm">// typeof：你是什么种类</span>
+console.log(typeof []);               <span class="cm">// 'object'  ← 不是 'array'</span>
+console.log(typeof null);             <span class="cm">// 'object'  ← 语言设计 bug</span>
+console.log(typeof <span class="kw">function</span>(){});      <span class="cm">// 'function'</span>
+
+<span class="cm">// getPrototypeOf：你链上的上一级是谁</span>
+console.log(Object.getPrototypeOf([]) === Array.prototype);       <span class="cm">// true</span>
+console.log(Object.getPrototypeOf({}) === Object.prototype);      <span class="cm">// true</span>
+console.log(Object.getPrototypeOf(()=>{}) === Function.prototype); <span class="cm">// true</span></code></pre>
+
+<div class="tip">
+  <strong>实战建议：</strong>判断数组用 <code>Array.isArray(arr)</code>，别靠 <code>typeof</code>（它只会说 <code>'object'</code>）。想知道一个对象的"继承链"用 <code>getPrototypeOf</code> / <code>instanceof</code>。
+</div>
+
+<h3>❌ 常见误区</h3>
+
+<table>
+  <tr><th>误区</th><th>真相</th></tr>
+  <tr>
+    <td>箭头函数有 <code>prototype</code></td>
+    <td><strong>没有。</strong>箭头函数不是 constructor，<code>(()=>{}).prototype === undefined</code>，不能 <code>new</code></td>
+  </tr>
+  <tr>
+    <td><code>__proto__</code> 是标准属性</td>
+    <td>它存在但不推荐直接用。应该用 <code>Object.getPrototypeOf(obj)</code> 和 <code>Object.setPrototypeOf(obj, proto)</code></td>
+  </tr>
+  <tr>
+    <td>class 比 prototype 快</td>
+    <td>一样快。class 只是语法糖，引擎执行的是同样的原型链代码</td>
+  </tr>
+  <tr>
+    <td>修改原型会影响已创建的实例</td>
+    <td><strong>会。</strong><code>__proto__</code> 是活指针，prototype 上的改动对所有已创建的实例立刻生效</td>
+  </tr>
+  <tr>
+    <td>箭头函数里的 <code>super</code></td>
+    <td>箭头函数没有自己的 <code>this</code> 和 <code>super</code>，它会从定义时的外层作用域继承，行为符合预期</td>
+  </tr>
+</table>
+
+<h3>🧪 一张图总结全貌</h3>
+
+<pre><code><span class="cm">// 原型链全景图（以 Dog 继承 Animal 为例）</span>
+<span class="cm">//</span>
+<span class="cm">//   实例 wangcai</span>
+<span class="cm">//      │  __proto__</span>
+<span class="cm">//      ▼</span>
+<span class="cm">//   Dog.prototype  ──── 有 speak() 方法</span>
+<span class="cm">//      │  __proto__</span>
+<span class="cm">//      ▼</span>
+<span class="cm">//   Animal.prototype  ── 有 speak() 方法（被 Dog 覆盖了）</span>
+<span class="cm">//      │  __proto__</span>
+<span class="cm">//      ▼</span>
+<span class="cm">//   Object.prototype  ── 有 toString(), hasOwnProperty() 等</span>
+<span class="cm">//      │  __proto__</span>
+<span class="cm">//      ▼</span>
+<span class="cm">//   null  ← 终点，找不到就返回 undefined</span></code></pre>
+
+<div class="note">
+  <strong>💡 记这两个等式就够了：</strong><br>
+  ① <code>实例.__proto__ === 构造函数.prototype</code><br>
+  ② 属性查找 = 先在自身找 → 找不到就沿着 <code>__proto__</code> 链往上，直到 <code>null</code><br>
+  理解这两句，原型链就全通了。class 只是把它们包装成了更熟悉的写法。
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 🔍 展开：迭代器 / 生成器 -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<h2 id="s1-4">1.4 迭代器 / 生成器详解</h2>
+
+<h3>🚶 迭代器：一个能"一步步走"的东西</h3>
+
+<p>迭代器的概念很简单：一个对象，每次调 <code>.next()</code> 就吐出下一个值，吐完了就说 <code>done: true</code>。就像自动贩卖机——按一下出一罐，卖完了亮红灯。</p>
+
+<pre><code><span class="cm">// 一个最简单的迭代器</span>
+<span class="kw">let</span> i = <span class="num">0</span>;
+<span class="kw">const</span> iterator = {
+  next() {
+    <span class="kw">if</span> (i &lt; <span class="num">3</span>) {
+      <span class="kw">return</span> { value: i++, done: <span class="kw">false</span> };  <span class="cm">// 有货，吐出 value</span>
+    }
+    <span class="kw">return</span> { value: undefined, done: <span class="kw">true</span> };   <span class="cm">// 卖完了</span>
+  }
+};
+
+console.log(iterator.next());  <span class="cm">// { value: 0, done: false }</span>
+console.log(iterator.next());  <span class="cm">// { value: 1, done: false }</span>
+console.log(iterator.next());  <span class="cm">// { value: 2, done: false }</span>
+console.log(iterator.next());  <span class="cm">// { value: undefined, done: true } ← 没了</span></code></pre>
+
+<p>这就是迭代器的全部：一个对象，有 <code>next()</code> 方法，返回 <code>{ value, done }</code>。</p>
+
+<h3>🔁 Iterable（可迭代对象）：给自己挂一个"默认迭代器"</h3>
+
+<p>上面的迭代器有一个问题：你没法用 <code>for...of</code> 遍历它。要支持 <code>for...of</code>，对象必须实现 <code>Symbol.iterator</code> 方法——这个方法返回一个迭代器。</p>
+
+<pre><code><span class="cm">// 一个自定义的可迭代对象</span>
+<span class="kw">const</span> range = {
+  from: <span class="num">1</span>,
+  to: <span class="num">5</span>,
+
+  <span class="cm">// Symbol.iterator 让 range 变成"可迭代的"</span>
+  [Symbol.iterator]() {
+    <span class="kw">let</span> current = <span class="kw">this</span>.from;
+    <span class="kw">const</span> end = <span class="kw">this</span>.to;
+    <span class="kw">return</span> {
+      next() {
+        <span class="kw">if</span> (current &lt;= end) {
+          <span class="kw">return</span> { value: current++, done: <span class="kw">false</span> };
+        }
+        <span class="kw">return</span> { value: undefined, done: <span class="kw">true</span> };
+      }
+    };
+  }
+};
+
+<span class="cm">// 现在可以用 for...of 了！</span>
+<span class="kw">for</span> (<span class="kw">const</span> num <span class="kw">of</span> range) {
+  console.log(num);  <span class="cm">// 1, 2, 3, 4, 5</span>
+}
+
+<span class="cm">// 也可以用展开运算符</span>
+console.log([...range]);  <span class="cm">// [1, 2, 3, 4, 5]</span>
+console.log(Math.max(...range));  <span class="cm">// 5</span></code></pre>
+
+<div class="note">
+  <strong>🎯 分清两个概念：</strong><br>
+  <strong>Iterator（迭代器）</strong> = 有 <code>next()</code> 方法的对象，返回 <code>{ value, done }</code><br>
+  <strong>Iterable（可迭代对象）</strong> = 有 <code>[Symbol.iterator]()</code> 方法的对象，可以被 <code>for...of</code> 遍历<br>
+  一个对象可以同时是两者（像内置的数组、Map、Set 一样）。
+</div>
+
+<h3>📦 内置的可迭代对象</h3>
+
+<p>JS 里这些东西都自带 <code>Symbol.iterator</code>：</p>
+
+<pre><code><span class="kw">const</span> arr = [<span class="str">'a'</span>, <span class="str">'b'</span>, <span class="str">'c'</span>];
+<span class="kw">const</span> set = <span class="kw">new</span> Set([<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>]);
+<span class="kw">const</span> map = <span class="kw">new</span> Map([[<span class="str">'k'</span>, <span class="str">'v'</span>]]);
+<span class="kw">const</span> str = <span class="str">'hello'</span>;
+
+<span class="cm">// 全都能用 for...of</span>
+<span class="kw">for</span> (<span class="kw">const</span> item <span class="kw">of</span> arr)  {}  <span class="cm">// ✅ Array</span>
+<span class="kw">for</span> (<span class="kw">const</span> item <span class="kw">of</span> set)  {}  <span class="cm">// ✅ Set</span>
+<span class="kw">for</span> (<span class="kw">const</span> item <span class="kw">of</span> map)  {}  <span class="cm">// ✅ Map → 每次吐出 [key, value]</span>
+<span class="kw">for</span> (<span class="kw">const</span> char <span class="kw">of</span> str)  {}  <span class="cm">// ✅ String → 逐字符</span></code></pre>
+
+<h3>⚡ 生成器（Generator）：迭代器的"懒人包"</h3>
+
+<p>手写 <code>next()</code> 太啰嗦了。生成器让你用 <code>yield</code> 关键字直接"暂停"函数，JS 自动帮你生成 <code>next()</code> 方法。</p>
+
+<pre><code><span class="cm">// function* 定义一个生成器函数</span>
+<span class="kw">function</span>* <span class="fn">simpleGenerator</span>() {
+  console.log(<span class="str">'开始'</span>);
+  <span class="kw">yield</span> <span class="num">1</span>;              <span class="cm">// 暂停，吐出 1，等下次 next()</span>
+  console.log(<span class="str">'中间'</span>);
+  <span class="kw">yield</span> <span class="num">2</span>;              <span class="cm">// 暂停，吐出 2</span>
+  console.log(<span class="str">'结束'</span>);
+  <span class="kw">return</span> <span class="num">3</span>;             <span class="cm">// return 值也会出现在 { value: 3, done: true }</span>
+}
+
+<span class="kw">const</span> gen = simpleGenerator();  <span class="cm">// 调用生成器函数，得到生成器对象（什么代码都没执行！）</span>
+
+console.log(gen.next());  <span class="cm">// "开始" → { value: 1, done: false }</span>
+console.log(gen.next());  <span class="cm">// "中间" → { value: 2, done: false }</span>
+console.log(gen.next());  <span class="cm">// "结束" → { value: 3, done: true }</span></code></pre>
+
+<div class="card">
+  <strong style="color:#fff;">生成器三件事：</strong><br>
+  ① <code>function*</code> 定义的函数，调用后<strong>不执行</strong>，返回一个生成器对象<br>
+  ② 每次 <code>.next()</code> 执行到下一个 <code>yield</code>，暂停在那里<br>
+  ③ <code>yield</code> 后面的表达式的值就是 <code>{ value: ..., done: false }</code> 里的 value
+</div>
+
+<h3>🔄 生成器实现的 Symbol.iterator（比手写简洁 10 倍）</h3>
+
+<pre><code><span class="cm">// 刚才手写的 range，用生成器重写</span>
+<span class="kw">const</span> range = {
+  from: <span class="num">1</span>,
+  to: <span class="num">5</span>,
+
+  *[Symbol.iterator]() {       <span class="cm">// * 在方法名前 = 生成器方法（ES6 语法）</span>
+    <span class="kw">for</span> (<span class="kw">let</span> i = <span class="kw">this</span>.from; i &lt;= <span class="kw">this</span>.to; i++) {
+      <span class="kw">yield</span> i;                   <span class="cm">// 每次 yield 暂停，for...of 自动调 next()</span>
+    }
+  }
+};
+
+console.log([...range]);  <span class="cm">// [1, 2, 3, 4, 5] ← 效果一样，代码少了一大半</span></code></pre>
+
+<h3>📨 yield 还能"收"数据：双向通信</h3>
+
+<p><code>yield</code> 不仅能往外吐值，<code>next(arg)</code> 还能往里传值——这是生成器的独门绝技：</p>
+
+<pre><code><span class="kw">function</span>* <span class="fn">twoWay</span>() {
+  <span class="kw">const</span> a = <span class="kw">yield</span> <span class="str">'给我第一个值'</span>;   <span class="cm">// 先吐出提示，暂停，等 next(val) 把 val 赋给 a</span>
+  console.log(<span class="str">'收到了:'</span>, a);
+  <span class="kw">const</span> b = <span class="kw">yield</span> <span class="str">'给我第二个值'</span>;
+  console.log(<span class="str">'收到了:'</span>, b);
+  <span class="kw">return</span> <span class="str">'完事'</span>;
+}
+
+<span class="kw">const</span> gen = twoWay();
+console.log(gen.next().value);       <span class="cm">// "给我第一个值"  ← 第一个 next() 不能传参，传了也被忽略</span>
+console.log(gen.next(<span class="str">'hello'</span>).value); <span class="cm">// "收到了: hello" → "给我第二个值"</span>
+console.log(gen.next(<span class="str">'world'</span>).value); <span class="cm">// "收到了: world" → "完事"</span></code></pre>
+
+<div class="warn">
+  <strong>⚠️ 注意：</strong>第一个 <code>next()</code> 不能传参，因为还没有 <code>yield</code> 在等它。从第二个 <code>next(val)</code> 开始，<code>val</code> 会赋给<strong>上一个</strong> <code>yield</code> 的返回值。
+</div>
+
+<h3>🧵 生成器做异步流程控制：让异步看起来像同步</h3>
+
+<p><strong>痛点：</strong>连续发两个请求，得层层嵌套：</p>
+
+<pre><code><span class=”cm”>// 回调地狱（不好读）</span>
+fetchUser(<span class=”str”>'Bob'</span>, user => {
+  fetchOrders(user.id, orders => {
+    console.log(orders);  <span class=”cm”>// 终于拿到</span>
+  });
+});</code></pre>
+
+<p>生成器 + <code>yield</code> 可以把它”拉直”。原理分三步：</p>
+
+<h4>第 1 步：用 yield 暂停，把异步操作”吐出去”</h4>
+<pre><code><span class=”kw”>function</span>* <span class=”fn”>myFlow</span>() {
+  <span class=”kw”>const</span> user   = <span class=”kw”>yield</span> fetchUser(<span class=”str”>'Bob'</span>);   <span class=”cm”>// ① 停在这儿，把 fetchUser 吐出去</span>
+  <span class=”kw”>const</span> orders = <span class=”kw”>yield</span> fetchOrders(user.id); <span class=”cm”>// ② 拿到 user 后继续，再停，把 fetchOrders 吐出去</span>
+  console.log(orders);                         <span class=”cm”>// ③ 拿到 orders，打完收工</span>
+}</code></pre>
+
+<h4>第 2 步：手动跑一遍，理解”吐出去 → 等结果 → 喂回来”</h4>
+<pre><code><span class=”kw”>const</span> gen = myFlow();
+
+<span class=”kw”>const</span> step1 = gen.next();     <span class=”cm”>// 跑到 ①，吐出 fetchUser('Bob')</span>
+<span class=”cm”>// step1 = { value: Promise&lt;user&gt;, done: false }</span>
+
+step1.value.then(user => {
+  <span class=”kw”>const</span> step2 = gen.next(user); <span class=”cm”>// 把 user 喂回去，跑到 ②，吐出 fetchOrders</span>
+  <span class=”cm”>// step2 = { value: Promise&lt;orders&gt;, done: false }</span>
+
+  step2.value.then(orders => {
+    gen.next(orders);          <span class=”cm”>// 把 orders 喂回去，跑到 ③，done: true</span>
+  });
+});</code></pre>
+
+<p>手动一个个写 <code>.then()</code> 太蠢了——写个循环让它自动跑：</p>
+
+<h4>第 3 步：写个几行的小马达，自动驱动</h4>
+<pre><code><span class=”kw”>function</span> <span class=”fn”>run</span>(genFn) {
+  <span class=”kw”>const</span> gen = genFn();
+  <span class=”kw”>function</span> <span class=”fn”>next</span>(val) {
+    <span class=”kw”>const</span> { value, done } = gen.next(val);
+    <span class=”kw”>if</span> (done) <span class=”kw”>return</span>;                <span class=”cm”>// 跑完了</span>
+    value.then(next);                  <span class=”cm”>// 等 Promise 完成，拿结果继续跑</span>
+  }
+  next();  <span class=”cm”>// 点火</span>
+}
+
+<span class=”cm”>// 用起来——异步代码写成一行行，清晰直白</span>
+run(<span class=”kw”>function</span>* () {
+  <span class=”kw”>const</span> user   = <span class=”kw”>yield</span> fetchUser(<span class=”str”>'Bob'</span>);
+  <span class=”kw”>const</span> orders = <span class=”kw”>yield</span> fetchOrders(user.id);
+  console.log(orders);
+});</code></pre>
+
+<div class=”card”>
+  <strong>🎯 一句话总结：</strong>生成器遇到 <code>yield</code> 就暂停，<code>run()</code> 在外面等着 Promise 完成，完事了用 <code>next(结果)</code> 把值塞回去、让它继续跑。坏消息：自己要写 <code>run()</code>。好消息：ES2017 把 <code>function*</code> → <code>async function</code>、<code>yield</code> → <code>await</code>、<code>run()</code> → 引擎内置，所以你直接用 <code>async/await</code> 就行了，不用关心里面的马达怎么转。
+</div>
+
+<div class=”tip”>
+  <strong>🧠 面试只需要记住：</strong><code>async/await</code> = generator + 自动执行器。引擎把 <code>yield</code> 换成 <code>await</code>，帮你内置了上面那个 <code>run()</code>。
+</div>
+
+<h3>📊 对比：for...of / 手写迭代器 / 生成器</h3>
+
+<table>
+  <tr><th></th><th>手写迭代器</th><th>生成器</th><th>async/await</th></tr>
+  <tr>
+    <td><strong>写法</strong></td>
+    <td><code>{ next() { return {value,done} } }</code></td>
+    <td><code>function*() { yield ... }</code></td>
+    <td><code>async function() { await ... }</code></td>
+  </tr>
+  <tr>
+    <td><strong>暂停能力</strong></td>
+    <td>❌ 靠手动维护状态</td>
+    <td>✅ <code>yield</code> 自动暂停</td>
+    <td>✅ <code>await</code> 自动暂停</td>
+  </tr>
+  <tr>
+    <td><strong>双向通信</strong></td>
+    <td>❌ 只能吐值</td>
+    <td>✅ <code>next(val)</code> 传值</td>
+    <td>✅ await Promise 拿到 resolve 值</td>
+  </tr>
+  <tr>
+    <td><strong>使用场景</strong></td>
+    <td>几乎不用手写（用生成器替代）</td>
+    <td>自定义迭代器、惰性计算、异步流程</td>
+    <td>所有异步操作用它</td>
+  </tr>
+</table>
+
+<h3>🎯 什么时候需要手写迭代器/生成器</h3>
+
+<table>
+  <tr><th>场景</th><th>用什么</th><th>为什么</th></tr>
+  <tr>
+    <td>遍历一个自定义数据结构</td>
+    <td><code>*[Symbol.iterator]()</code></td>
+    <td>让你的对象能用 <code>for...of</code> 和 <code>[...obj]</code></td>
+  </tr>
+  <tr>
+    <td>惰性生成无限序列</td>
+    <td><code>function*</code></td>
+    <td>不一次性计算全部，用到哪算到哪（如生成唯一 ID）</td>
+  </tr>
+  <tr>
+    <td>逐步处理大文件</td>
+    <td><code>function*</code> + 逐行读</td>
+    <td>不把整个文件加载进内存</td>
+  </tr>
+  <tr>
+    <td>手写 async/await 模拟器</td>
+    <td><code>function*</code> + runner</td>
+    <td>理解 async/await 底层（主要是面试）</td>
+  </tr>
+  <tr>
+    <td>取消异步操作</td>
+    <td><code>function*</code> + <code>gen.return()</code></td>
+    <td>生成器可以外部终止，Promise 不行</td>
+  </tr>
+</table>
+
+<div class="note">
+  <strong>💡 一句话：</strong>你知道的 <code>async/await</code> 就是生成器的特化版——专门为 Promise 定制的生成器。理解了 <code>yield</code> 的暂停-恢复，就理解了 <code>await</code> 的本质。
+</div>
+
+<h2 id="s1-5">1.5 Streams（Node.js 最核心的抽象）</h2>
+
+<p>Stream 是 Node.js 处理数据的<strong>核心抽象</strong>——把数据看作水流，不一次性加载到内存，而是"流到哪处理到哪"。</p>
+
+<h3>1.5·附：五种 Stream 类型速览</h3>
+
+<table>
+  <tr><th>类型</th><th>角色</th><th>核心方法</th><th>一句话</th></tr>
+  <tr>
+    <td><code>Readable</code></td>
+    <td>数据源（生产者）</td>
+    <td><code>push(chunk)</code> / <code>push(null)</code></td>
+    <td>往外吐数据</td>
+  </tr>
+  <tr>
+    <td><code>Writable</code></td>
+    <td>数据目的地（消费者）</td>
+    <td><code>write(chunk)</code> / <code>end()</code></td>
+    <td>往里灌数据</td>
+  </tr>
+  <tr>
+    <td><code>Transform</code></td>
+    <td>既是 Readable 又是 Writable</td>
+    <td><code>_transform(chunk, enc, cb)</code></td>
+    <td>边读边写边转换（如 gzip 压缩）</td>
+  </tr>
+  <tr>
+    <td><code>Duplex</code></td>
+    <td>独立的 Readable + Writable</td>
+    <td><code>_read()</code> + <code>_write()</code></td>
+    <td>双向管道（如 TCP socket）</td>
+  </tr>
+  <tr>
+    <td><code>PassThrough</code></td>
+    <td>Transform 的空实现</td>
+    <td>不做任何转换，透传</td>
+    <td>用于管道观察/打日志/测试</td>
+  </tr>
+</table>
+
+<div class="note">
+  <strong>📌 Transform vs Duplex 的区别：</strong>Transform 的输入和输出<strong>有因果关联</strong>（你写 A → 它读出 A'），Duplex 的读和写<strong>互不相干</strong>（你写不写它都自己读）。新手最容易搞混。
+</div>
+
+<h3>1.5·附：背压机制（backpressure）——为什么 stream 不会爆内存</h3>
+
+<p><strong>场景：</strong>磁盘读速 500MB/s，网络写速 10MB/s。如果不做控制，数据会在内存里堆成山。</p>
+
+<p><strong>背压原理：</strong>下游写不进去时，上游暂停读取。</p>
+
+<pre><code><span class="kw">const</span> rs = fs.createReadStream(<span class="str">'/big-file.bin'</span>);
+<span class="kw">const</span> ws = fs.createWriteStream(<span class="str">'/copy.bin'</span>);
+
+<span class="cm">// ws.write() 的返回值是"还能不能继续写"</span>
+<span class="cm">// 生产可写流 → writable 内部有个缓冲</span>
+<span class="cm">// 缓冲满了 → ws.write() 返回 false → 应该暂停上游</span>
+<span class="cm">// 缓冲排空 → drain 事件 → 可以继续</span>
+
+rs.on(<span class="str">'data'</span>, chunk => {
+  <span class="kw">const</span> canWrite = ws.write(chunk);
+  <span class="kw">if</span> (!canWrite) {
+    rs.pause();               <span class="cm">// 下游写不动了，上游停</span>
+  }
+});
+ws.on(<span class="str">'drain'</span>, () => {
+  rs.resume();                <span class="cm">// 下游消化完了，上游继续</span>
+});
+
+<span class="cm">// 上面这些，手工写又累又容易漏 —— Node 给了两个封装：</span></code></pre>
+
+<h4>pipe() vs pipeline()</h4>
+
+<table>
+  <tr><th></th><th><code>pipe()</code></th><th><code>pipeline()</code></th></tr>
+  <tr>
+    <td><strong>用法</strong></td>
+    <td><code>rs.pipe(ws)</code></td>
+    <td><code>pipeline(rs, transform, ws, cb)</code></td>
+  </tr>
+  <tr>
+    <td><strong>背压</strong></td>
+    <td>✅ 自动处理</td>
+    <td>✅ 自动处理</td>
+  </tr>
+  <tr>
+    <td><strong>错误传播</strong></td>
+    <td>❌ 不会自动销毁中间流<br><span style="color:var(--muted);font-size:0.85rem;">一个流坏了，上下游都不知道</span></td>
+    <td>✅ 任意流出错 → 自动销毁所有流并报错<br><span style="color:var(--muted);font-size:0.85rem;">推荐</span></td>
+  </tr>
+  <tr>
+    <td><strong>完成回调</strong></td>
+    <td>监听 <code>finish</code> 事件</td>
+    <td>直接传 callback</td>
+  </tr>
+  <tr>
+    <td><strong>可用性</strong></td>
+    <td>Node.js 原生</td>
+    <td><code>stream/promises</code>（Node 15+）<br>或 <code>require('stream').pipeline</code></td>
+  </tr>
+</table>
+
+<div class="tip">
+  <strong>⚡ 首选 pipeline()。</strong>pipe() 一个流崩了不会自动销毁整条链路，内存泄漏就是这么来的。pipeline() 一个爆炸全部关闭。
+</div>
+
+<h3>1.5·附：push(null) vs destroy() —— 怎么结束一个流</h3>
+
+<table>
+  <tr><th></th><th><code>push(null)</code></th><th><code>destroy(err)</code></th></tr>
+  <tr><td><strong>含义</strong></td><td>"数据读完了，正常结束"</td><td>"出问题了，立刻停"</td></tr>
+  <tr><td><strong>触发事件</strong></td><td><code>'end'</code> 事件</td><td><code>'error'</code> + <code>'close'</code> 事件</td></tr>
+  <tr><td><strong>还能读吗</strong></td><td>❌ 读完就没了</td><td>❌ 直接销毁</td></tr>
+  <tr><td><strong>用在哪</strong></td><td>文件读完、页码到底</td><td>网络断开、文件损坏、主动取消</td></tr>
+</table>
+
+<h3>1.5·附：手写一个组合的 Transform stream</h3>
+
+<pre><code><span class="kw">const</span> { Transform } = require(<span class="str">'stream'</span>);
+
+<span class="cm">// 每行变大写</span>
+<span class="kw">const</span> upperCaseLines = <span class="kw">new</span> Transform({
+  <span class="cm">// 经典写法：模式 + 回调</span>
+  transform(chunk, encoding, callback) {
+    <span class="cm">// chunk 是 Buffer（stream 默认）</span>
+    <span class="kw">const</span> text = chunk.toString().toUpperCase();
+    <span class="kw">this</span>.push(text);       <span class="cm">// push 出去给下游</span>
+    callback();              <span class="cm">// 告诉系统"这一块处理完了，下一条"</span>
+  },
+
+  flush(callback) {          <span class="cm">// 所有数据处理完后调用一次（可选）</span>
+    <span class="kw">this</span>.push(<span class="str">'\n--- EOF ---\n'</span>);
+    callback();
+  }
+});
+
+<span class="cm">// 用 pipeline 串起来，稳如老狗</span>
+<span class="kw">const</span> { pipeline } = require(<span class="str">'stream/promises'</span>);
+<span class="kw">await</span> pipeline(
+  fs.createReadStream(<span class="str">'input.txt'</span>),   <span class="cm">// 读文件</span>
+  upperCaseLines,                         <span class="cm">// 逐块变大写</span>
+  fs.createWriteStream(<span class="str">'output.txt'</span>)   <span class="cm">// 写文件</span>
+);
+console.log(<span class="str">'done'</span>);
+
+<span class="cm">// 全程内存只占 highWaterMark × 3（三条流各一块缓冲 ≈ 192KB）</span>
+<span class="cm">// 而 fs.readFile('input.txt') 会把整个文件加载进内存</span></code></pre>
+
+<h3>1.5·附：什么时候用 stream，什么时候不用</h3>
+
+<table>
+  <tr><th>场景</th><th>用</th><th>原因</th></tr>
+  <tr>
+    <td>文件 &lt; 100MB</td>
+    <td><code>fs.readFile</code></td>
+    <td>一次读简单省事，内存够用</td>
+  </tr>
+  <tr>
+    <td>文件 &gt; 1GB</td>
+    <td><code>fs.createReadStream</code></td>
+    <td><strong>stream 是唯一选择</strong>，否则爆内存</td>
+  </ tr>
+  <tr>
+    <td>大文件转换（压缩/解压/加密）</td>
+    <td><code>pipeline(read → transform → write)</code></td>
+    <td>逐块处理，不存全量</td>
+  </tr>
+  <tr>
+    <td>HTTP 请求/响应体（未知大小）</td>
+    <td><code>stream</code>（req/res 本身就是 stream）</td>
+    <td>数据可能很大，不能全 load</td>
+  </tr>
+  <tr>
+    <td>数据库查询结果（百万行）</td>
+    <td>游标 + stream</td>
+    <td>cursor 支持逐条流式读取</td>
+  </tr>
+  <tr>
+    <td>简单 JSON 配置（几 KB）</td>
+    <td><code>require('./config.json')</code></td>
+    <td>一次读最简单，不需要 stream</td>
+  </tr>
+</table>
+
+<div class="warn">
+  <strong>⚠️ stream 的内存优势只在数据量大于 buffer 大小时生效。</strong>一个小 JSON 文件用 stream 反而增加代码复杂度——杀鸡别用牛刀。
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+
+<h2 id="s1-6">1.6 模块系统</h2>
+
+<p>Node.js 同时支持两套模块系统——这是历史遗产，也是面试常考。</p>
+
+<h3>1.6·附：CommonJS vs ESM —— 一张表讲清差异</h3>
+
+<table>
+  <tr><th></th><th>CommonJS</th><th>ESM</th></tr>
+  <tr>
+    <td><strong>语法</strong></td>
+    <td><code>require()</code> / <code>module.exports</code></td>
+    <td><code>import</code> / <code>export</code></td>
+  </tr>
+  <tr>
+    <td><strong>诞生</strong></td>
+    <td>2009，Node.js 原始方案</td>
+    <td>2015，ES6 标准</td>
+  </tr>
+  <tr>
+    <td><strong>加载时机</strong></td>
+    <td><strong>运行时</strong>同步加载</td>
+    <td><strong>编译时</strong>静态分析</td>
+  </tr>
+  <tr>
+    <td><strong>是同步的吗</strong></td>
+    <td>✅ 同步（阻塞）</td>
+    <td>支持异步（顶层 await）</td>
+  </tr>
+  <tr>
+    <td><strong>tree-shaking</strong></td>
+    <td>❌ 不支持<br><span style="color:var(--muted);font-size:0.85rem;">运行时才知道导出了什么</span></td>
+    <td>✅ 支持<br><span style="color:var(--muted);font-size:0.85rem;">编译时知道没用到 → 删除</span></td>
+  </tr>
+  <tr>
+    <td><strong>动态导入</strong></td>
+    <td>天然支持（本身就是运行时）</td>
+    <td><code>import()</code> 返回 Promise（动态 import）</td>
+  </tr>
+  <tr>
+    <td><strong>导出是活的吗</strong></td>
+    <td>❌ 导出的是<strong>值的拷贝</strong></td>
+    <td>✅ 导出的是<strong>活的引用</strong>（绑定）</td>
+  </tr>
+  <tr>
+    <td><strong>文件扩展名</strong></td>
+    <td><code>.js</code> / <code>.cjs</code></td>
+    <td><code>.mjs</code> / <code>.js</code>（需 <code>"type":"module"</code>）</td>
+  </tr>
+  <tr>
+    <td><strong>循环引用行为</strong></td>
+    <td>拿到<strong>不完整的对象</strong>（见下）</td>
+    <td>拿到<strong>不可变绑定</strong>（会报错或拿到 undefined）</td>
+  </tr>
+</table>
+
+<h3>1.6·附：循环引用 —— 面试经典坑</h3>
+
+<pre><code><span class="cm">// a.js</span>
+console.log(<span class="str">'a 开始'</span>);
+<span class="kw">const</span> b = require(<span class="str">'./b'</span>);
+<span class="kw">const</span> name = <span class="str">'A'</span>;
+module.exports = { name, b };
+console.log(<span class="str">'a 结束'</span>);
+
+<span class="cm">// b.js</span>
+console.log(<span class="str">'b 开始'</span>);
+<span class="kw">const</span> a = require(<span class="str">'./a'</span>);
+<span class="kw">const</span> name = <span class="str">'B'</span>;
+module.exports = { name, a };
+console.log(<span class="str">'b 结束'</span>);
+
+<span class="cm">// 输出：a 开始 → b 开始 → b 结束 → a 结束</span>
+<span class="cm">// b 中 require('./a') 拿到的是 a <strong>当前已完成导出</strong>的 {}（此时 a 还没执行到 module.exports）</span></code></pre>
+
+<p><strong>关键：</strong>CommonJS 遇到循环引用时，返回<strong>已执行到该位置为止</strong>的 <code>module.exports</code>，不是后来的完整版。这就是为什么拿到的可能是空对象。</p>
+
+<h3>1.6·附：require 内部原理 —— 缓存和包装函数</h3>
+
+<h4>缓存机制</h4>
+
+<pre><code><span class="cm">// require 只执行模块一次，结果缓存起来</span>
+<span class="kw">const</span> m1 = require(<span class="str">'./foo'</span>);  <span class="cm">// 加载、编译、执行</span>
+<span class="kw">const</span> m2 = require(<span class="str">'./foo'</span>);  <span class="cm">// 直接返回缓存（同一个对象！）</span>
+console.log(m1 === m2);          <span class="cm">// true</span>
+
+<span class="cm">// 缓存键是<strong>文件的绝对路径</strong>，所以大小写、符号链接会影响缓存</span>
+<span class="cm">// 如果想强制重新加载，删缓存：</span>
+<span class="kw">delete</span> require.cache[require.resolve(<span class="str">'./foo'</span>)];</code></pre>
+
+<h4>模块包装函数 —— Node 对每个文件做了什么</h4>
+
+<p>你写的每一个文件，Node 在执行前会包上一层函数：</p>
+
+<pre><code><span class="cm">// 你写的 foo.js：</span>
+<span class="kw">const</span> x = <span class="num">1</span>;
+module.exports = { x };
+
+<span class="cm">// Node 编译时变成：</span>
+(<span class="kw">function</span>(exports, require, module, __filename, __dirname) {
+  <span class="kw">const</span> x = <span class="num">1</span>;
+  module.exports = { x };
+});</code></pre>
+
+<table>
+  <tr><th>参数</th><th>是什么</th><th>常见用途</th></tr>
+  <tr>
+    <td><code>exports</code></td>
+    <td><code>module.exports</code> 的快捷引用</td>
+    <td><code>exports.foo = 1</code> ✅<br><code>exports = {foo: 1}</code> ❌ 切断了引用</td>
+  </tr>
+  <tr>
+    <td><code>require</code></td>
+    <td>加载其他模块的函数</td>
+    <td><code>require('./bar')</code></td>
+  </tr>
+  <tr>
+    <td><code>module</code></td>
+    <td>当前模块对象（含 <code>exports</code>、<code>id</code>、<code>parent</code>）</td>
+    <td><code>module.exports = ...</code></td>
+  </tr>
+  <tr>
+    <td><code>__filename</code></td>
+    <td>当前文件的绝对路径</td>
+    <td>日志、路径拼接</td>
+  </tr>
+  <tr>
+    <td><code>__dirname</code></td>
+    <td>当前文件所在目录的绝对路径</td>
+    <td><code>path.join(__dirname, 'static')</code></td>
+  </tr>
+</table>
+
+<div class="warn">
+  <strong>⚠️ exports vs module.exports：</strong>初始时 <code>exports === module.exports</code>（指向同一个对象）。如果你写 <code>exports = { x: 1 }</code>，你只是让 exports 指向了新对象，<code>module.exports</code> 还是原来的——导出失效。永远用 <code>module.exports = ...</code> 来做完整替换，<code>exports.x = ...</code> 只用来追加属性。
+</div>
+
+<h3>1.6·附：.cjs / .mjs / "type": "module" 的解析规则</h3>
+
+<table>
+  <tr><th>文件扩展名</th><th>是什么系统</th><th>需要 "type": "module" 吗</th></tr>
+  <tr>
+    <td><code>.cjs</code></td>
+    <td>CommonJS</td>
+    <td>❌ 不需要，强制 CJS</td>
+  </tr>
+  <tr>
+    <td><code>.mjs</code></td>
+    <td>ESM</td>
+    <td>❌ 不需要，强制 ESM</td>
+  </tr>
+  <tr>
+    <td><code>.js</code>（无 "type"）</td>
+    <td>CommonJS（默认）</td>
+    <td>—</td>
+  </tr>
+  <tr>
+    <td><code>.js</code>（有 "type": "module"）</td>
+    <td>ESM</td>
+    <td>✅ 在 package.json 里设</td>
+  </tr>
+</table>
+
+<p><strong>最简单的记法：</strong>显式写 <code>.mjs</code> / <code>.cjs</code> 最稳，不依赖 package.json 的配置。写了 <code>.js</code>，就看最近的 <code>package.json</code> 怎么设。</p>
+
+<div class="card">
+  <strong>🎯 面试只记住三句话：</strong><br>
+  ① require 第一次加载后就<strong>缓存</strong>（按绝对路径），不会再执行第二次。<br>
+  ② 你写的代码被 Node <strong>包在一个 5 参数的函数里</strong>（这就是为什么每个文件都有 require/module/__dirname）。<br>
+  ③ CommonJS 导出<strong>值拷贝</strong>，ESM 导出<strong>活引用</strong>；循环引用时 CJS 可能拿到空对象。
+</div>
+
+<h2 id="s2">二、Node.js 内核机制（分水岭）</h2>
+
+<h3 id="s2-1">2.1 事件循环与异步 I/O（概要）</h3>
+<p>📎 六阶段循环图、源码对照、面试题详解已前移至 <strong>「1.1 Event Loop 六阶段详解」</strong>。以下展开线程池与异步 I/O 的底层协作——这是 Node.js 区别于浏览器 JS 的<strong>核心差异</strong>。</p>
+
+<!-- ═══ 2.1·附1：libuv 线程池与 I/O 完成端口的协作 ═══ -->
+<h3 id="s2-1-1">2.1·附：libuv 线程池与 I/O 完成端口的协作</h3>
+
+<h4>为什么需要线程池？——两类 I/O 的根本区别</h4>
+
+<p>操作系统提供的异步 API<strong>不是全能的</strong>。把 I/O 分两路看：</p>
+
+<table>
+  <tr><th></th><th>网络 I/O（socket、pipe）</th><th>文件 I/O + 计算密集操作</th></tr>
+  <tr>
+    <td><strong>OS 支持</strong></td>
+    <td>✅ 内核原生异步<br><span style="color:var(--muted);font-size:0.85rem;">epoll(Linux) / kqueue(macOS) / IOCP(Windows)</span></td>
+    <td>⚠️ POSIX 规范里文件 I/O 是<strong>同步阻塞</strong>的<br><span style="color:var(--muted);font-size:0.85rem;">read()/write() 不提供异步版本（Linux AIO 有坑）</span></td>
+  </tr>
+  <tr>
+    <td><strong>libuv 怎么做</strong></td>
+    <td>直接对接内核通知机制，<strong>不占线程</strong></td>
+    <td>把阻塞操作<strong>扔进线程池</strong>，用线程模拟异步<br><span style="color:var(--muted);font-size:0.85rem;">线程在后台干活，干完通知事件循环</span></td>
+  </tr>
+  <tr>
+    <td><strong>消费线程吗</strong></td>
+    <td>❌ 0 个线程（纯内核态）</td>
+    <td>✅ 每个操作占 1 个线程（默认池大小 4）</td>
+  </tr>
+</table>
+
+<div class="note">
+  <strong>📌 一句话区分：</strong>网络 I/O 走<strong>事件通知</strong>（内核告诉你"数据到了"），文件 I/O 走<strong>线程池</strong>（线程帮你读完文件再通知你）。前者是真正的异步，后者是"用线程伪装的异步"。
+</div>
+
+<h4>线程池怎么工作的</h4>
+
+<div class="layer-diagram">
+  <div class="l1">🔵 JavaScript 层：<code>fs.readFile('/data.txt', cb)</code> → 把请求交给 libuv</div>
+  <div class="l2">🟡 libuv 层：(1) 网络 I/O → 注册到 epoll，直接返回 &nbsp;|&nbsp; (2) 文件 I/O → 扔进 Work Queue</div>
+  <div class="l3">🟣 线程池：4 个工作线程轮询 Work Queue → 其中一个拿到任务 → 执行阻塞 read()</div>
+  <div class="l4">🔴 完成通知：线程执行完 → 把 cb 推入事件循环的 pending 队列 → 下一轮 poll 阶段执行 cb</div>
+</div>
+
+<p>关键：JavaScript 主线程<strong>自始至终没离开过事件循环</strong>——它只是把活丢给 libuv，然后继续处理其他事情。阻塞发生在<strong>线程池的线程里</strong>，不影响主线程。</p>
+
+<!-- ═══ 2.1·附2：哪些操作进线程池 ═══ -->
+<h3 id="s2-1-2">2.1·附：进线程池 vs 不进——完整的操作清单</h3>
+
+<table>
+  <tr><th>分类</th><th>API / 模块</th><th>走线程池？</th><th>原因</th></tr>
+  <tr>
+    <td rowspan="4" style="vertical-align:middle;"><strong>文件系统</strong></td>
+    <td><code>fs.readFile / fs.writeFile</code></td>
+    <td style="color:var(--red);">✅ 进</td>
+    <td>POSIX 文件 I/O 没有可靠的异步 API</td>
+  </tr>
+  <tr>
+    <td><code>fs.readdir / fs.stat</code></td>
+    <td style="color:var(--red);">✅ 进</td>
+    <td>目录和元数据操作同属文件系统</td>
+  </tr>
+  <tr>
+    <td><code>fs.open / fs.close</code></td>
+    <td style="color:var(--red);">✅ 进</td>
+    <td>同上</td>
+  </tr>
+  <tr>
+    <td><code>fs.createReadStream</code></td>
+    <td style="color:var(--red);">✅ 进</td>
+    <td>底层读操作仍依赖线程池</td>
+  </tr>
+  <tr>
+    <td rowspan="2" style="vertical-align:middle;"><strong>密码学</strong></td>
+    <td><code>crypto.pbkdf2 / crypto.scrypt</code></td>
+    <td style="color:var(--red);">✅ 进</td>
+    <td>CPU 密集，不占线程池会饿死事件循环</td>
+  </tr>
+  <tr>
+    <td><code>crypto.randomBytes / randomFill</code></td>
+    <td style="color:var(--red);">✅ 进</td>
+    <td>部分实现依赖线程池</td>
+  </tr>
+  <tr>
+    <td><strong>DNS</strong></td>
+    <td><code>dns.lookup()</code></td>
+    <td style="color:var(--red);">✅ 进</td>
+    <td>调用 <code>getaddrinfo()</code>，这是阻塞系统调用</td>
+  </tr>
+  <tr>
+    <td rowspan="2" style="vertical-align:middle;"><strong>压缩</strong></td>
+    <td><code>zlib.gzip / zlib.deflate</code></td>
+    <td style="color:var(--red);">✅ 进</td>
+    <td>CPU 密集压缩操作</td>
+  </tr>
+  <tr>
+    <td><code>zlib.createGzip</code>（stream 模式）</td>
+    <td style="color:var(--red);">✅ 进</td>
+    <td>同上</td>
+  </tr>
+  <tr>
+    <td rowspan="3" style="vertical-align:middle;"><strong>网络 I/O</strong></td>
+    <td><code>net.createServer / http.request</code></td>
+    <td style="color:var(--green);">❌ 不进</td>
+    <td>内核 epoll/kqueue/IOCP 原生异步</td>
+  </tr>
+  <tr>
+    <td><code>tls.connect</code></td>
+    <td style="color:var(--green);">❌ 不进</td>
+    <td>基于 socket，走内核异步</td>
+  </tr>
+  <tr>
+    <td><code>dns.resolve*()</code></td>
+    <td style="color:var(--green);">❌ 不进</td>
+    <td>使用 <code>c-ares</code> 库，在自己的 socket 上做异步 DNS</td>
+  </tr>
+  <tr>
+    <td><strong>Pipe</strong></td>
+    <td><code>process.stdin / child_process stdio</code></td>
+    <td style="color:var(--green);">❌ 不进</td>
+    <td>Unix domain socket / Windows named pipe → 内核异步</td>
+  </tr>
+  <tr>
+    <td><strong>信号</strong></td>
+    <td><code>process.on('SIGINT', ...)</code></td>
+    <td style="color:var(--green);">❌ 不进</td>
+    <td>内核信号机制，与线程池无关</td>
+  </tr>
+</table>
+
+<div class="tip">
+  <strong>🧠 记忆口诀：</strong>"文加密压 DNS-lookup 进池；网管信不沾线程。" —— 文件(file)、加密(crypto)、压缩(zlib)、dns.lookup 进线程池；网络(net/http)、管道(pipe)、信号(signal)、dns.resolve 不走线程池。
+</div>
+
+<div class="warn">
+  <strong>⚠️ 常见坑：</strong><code>dns.lookup()</code> 走线程池（调 getaddrinfo），<code>dns.resolve()</code> 不走（用 c-ares 库自己发 DNS 包）。大量并发 DNS 查询请用 <code>dns.resolve*</code> 系列，避免占满线程池。
+</div>
+
+<!-- ═══ 2.1·附3：UV_THREADPOOL_SIZE 调优 ═══ -->
+<h3 id="s2-1-3">2.1·附：UV_THREADPOOL_SIZE 调优——什么时候动它</h3>
+
+<h4>默认值</h4>
+<p>线程池默认 <strong>4 个线程</strong>。意味着同时最多只能有 4 个线程池操作（fs/crypto/zlib/dns.lookup）在并行执行。第 5 个操作<strong>排队等待</strong>。</p>
+
+<h4>判断是否需要调大</h4>
+
+<p>不是越大越好。线程多了 → 上下文切换开销增大 → 反而可能更慢。只在以下信号出现时考虑调大：</p>
+
+<table>
+  <tr><th>信号</th><th>诊断方法</th><th>推荐值</th></tr>
+  <tr>
+    <td>大量并发文件读写</td>
+    <td>高并发下 fs 的 p99 延迟明显高于 p50</td>
+    <td>8 ~ 16</td>
+  </tr>
+  <tr>
+    <td>密码哈希成为瓶颈</td>
+    <td><code>crypto.pbkdf2</code> 调用堆积，CPU 却用不满</td>
+    <td>等于 CPU 核数</td>
+  </tr>
+  <tr>
+    <td>4 个以上 CPU 核，但 CPU 利用率低</td>
+    <td>多核机器上 I/O 吞吐上不去</td>
+    <td>CPU 核数 ~ 核数×2</td>
+  </tr>
+  <tr>
+    <td>zlib 大批量压缩/解压</td>
+    <td>压缩吞吐量瓶颈</td>
+    <td>8 ~ CPU 核数</td>
+  </tr>
+</table>
+
+<h4>怎么设</h4>
+
+<pre><code><span class="cm">// 方式一：启动时环境变量（推荐）</span>
+<span class="cm">// $ UV_THREADPOOL_SIZE=8 node server.js</span>
+
+<span class="cm">// 方式二：代码里设（必须在所有异步操作之前！）</span>
+process.env.UV_THREADPOOL_SIZE = <span class="num">8</span>;
+<span class="kw">const</span> fs = require(<span class="str">'fs'</span>);
+<span class="cm">// 如果放在 require('fs') 之后，libuv 已经初始化完毕，设了也没用</span></code></pre>
+
+<div class="warn">
+  <strong>⚠️ process.env.UV_THREADPOOL_SIZE 必须写在所有 require 之前！</strong>libuv 在第一次异步操作时初始化线程池，之后再改这个值无效。
+</div>
+
+<h4>快速验证：用 crypto 榨干线程池</h4>
+
+<pre><code><span class="kw">const</span> start = Date.now();
+<span class="cm">// 同时发起 8 个 pbkdf2（比线程池大 1 倍）</span>
+<span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; <span class="num">8</span>; i++) {
+  crypto.pbkdf2(<span class="str">'password'</span>, <span class="str">'salt'</span>, <span class="num">100000</span>, <span class="num">512</span>, <span class="str">'sha512'</span>, () => {
+    console.log(`第 ${i + <span class="num">1</span>} 个完成`, Date.now() - start, <span class="str">'ms'</span>);
+  });
+}
+<span class="cm">// UV_THREADPOOL_SIZE=4：分两批，每批 4 个同时跑，第一批 ~1.5s，第二批 ~3s</span>
+<span class="cm">// UV_THREADPOOL_SIZE=8：8 个同时跑，全部 ~1.5s</span></code></pre>
+
+<h3>2.2 内存管理</h3>
+<ul>
+  <li>V8 堆结构：新生代 (Scavenge) / 老生代 (Mark-Sweep &amp; Mark-Compact)</li>
+  <li>能分析 heap snapshot 找到 Retained Size 最大的对象</li>
+  <li>能写出不泄漏的闭包、不爆炸的 Buffer 使用、正确的 Stream 消费</li>
+  <li>理解 ArrayBuffer / SharedArrayBuffer / Buffer 的关系与零拷贝转换</li>
+</ul>
+
+<h2>三、运行时与系统集成（高级）</h2>
+
+<h3>3.1 进程管理</h3>
+<ul>
+  <li><code>cluster</code>、<code>worker_threads</code>、<code>child_process</code> 三者的使用场景与区别</li>
+  <li>能实现 <strong>零停机重启</strong>（优雅关闭 + 连接转移）</li>
+  <li>理解 IPC 通道、<code>process.send()</code> 的序列化开销</li>
+</ul>
+
+<h3>3.2 性能诊断</h3>
+<ul>
+  <li><strong>火焰图</strong>：用 <code>0x</code> 或 <code>clinic flame</code> 生成并分析</li>
+  <li><strong>CPU profiling</strong>：<code>--cpu-prof</code> + Chrome DevTools 找到热点函数</li>
+  <li><strong>堆快照对比</strong>：<code>heapdump</code> + DevTools 定位泄漏</li>
+  <li><strong>Async Hooks</strong>：追踪异步资源生命周期</li>
+  <li>能分析为什么一个 API 的 P99 延迟突然飙升</li>
+</ul>
+
+<h3>3.3 网络</h3>
+<ul>
+  <li><code>http</code> / <code>https</code> / <code>http2</code> 模块的底层：Agent、keep-alive、socket 复用</li>
+  <li><strong>TCP/UDP</strong>：<code>net</code> 模块的 Socket 实现自定义协议</li>
+  <li><strong>gRPC</strong>：理解 HTTP/2 多路复用、Proto 序列化</li>
+  <li>能解释从 <code>http.createServer</code> 到 socket 写入的完整链路</li>
+</ul>
+
+<h2>四、工程能力（区分 Senior 与普通工程师）</h2>
+
+<h3>4.1 架构能力</h3>
+<ul>
+  <li>能设计分层架构：Controller → Service → Repository（或 DDD 聚合根）</li>
+  <li><strong>依赖注入</strong>：理解 IoC 容器原理</li>
+  <li><strong>事件驱动</strong>：用 EventEmitter 解耦模块；知道 <code>MaxListenersExceeded</code> 内存泄漏隐患</li>
+  <li>能设计中间件链模式（责任链）、插件系统</li>
+</ul>
+
+<h3>4.2 可靠性与容错</h3>
+<ul>
+  <li>实现 <strong>断路保护</strong>（熔断器）、<strong>指数退避重试</strong>、<strong>优雅降级</strong></li>
+  <li>理解读写超时与连接超时的区别</li>
+  <li>能用 AbortController 取消链式异步操作</li>
+  <li>实现请求级上下文（<code>AsyncLocalStorage</code>）用于全链路日志追踪</li>
+</ul>
+
+<h3>4.3 安全</h3>
+<ul>
+  <li>防注入（SQL、NoSQL、命令注入）</li>
+  <li>CSRF、CORS、CSP 的正确配置与原理</li>
+  <li>密钥管理：环境变量 vs Vault vs KMS</li>
+  <li>理解 npm 供应链攻击：lockfile、integrity hash</li>
+</ul>
+
+<h2>五、生产就绪（运维视角）</h2>
+
+<h3>5.1 可观测性</h3>
+<ul>
+  <li><strong>结构化日志</strong>：pino JSON 输出 + ELK / Loki</li>
+  <li><strong>分布式追踪</strong>：OpenTelemetry + Jaeger</li>
+  <li><strong>指标暴露</strong>：prom-client 暴露 Prometheus 格式</li>
+  <li><strong>健康检查</strong>：<code>/healthz</code>（存活）vs <code>/readyz</code>（就绪）</li>
+</ul>
+
+<h3>5.2 Docker / 容器化</h3>
+<ul>
+  <li><strong>信号处理</strong>：SIGTERM 优雅退出；init 进程（tini）</li>
+  <li><strong>多阶段构建</strong>减少镜像体积</li>
+  <li><strong>资源限制</strong>：<code>--max-old-space-size</code> 适配 cgroup 内存限制</li>
+</ul>
+
+<h2>六、学习路径建议</h2>
+
+<pre><code>初学 → 用 Express/Koa 写几个 CRUD 项目（2-3 周）
+    ↓
+进阶 → 深入异步模型、Stream、Buffer（从这里开始质变，2-3 月）
+    ↓
+高级 → 读 Node.js 源码（lib/ 目录）、理解 libuv 接口（数月）
+    ↓
+实战 → 做高并发项目：WebSocket 推送、文件处理服务、API 网关
+    ↓
+精通 → 从零实现类 Express 框架 / RPC 库 / ORM / 消息队列客户端</code></pre>
+
+<div class="card">
+  <h3 style="margin-top:0;">🧪 精通检验 — 你能回答吗？</h3>
+  <ol>
+    <li><code>new Promise(fn).then(a, b)</code> 和 <code>new Promise(fn).then(a).catch(b)</code> 行为有何区别？</li>
+    <li>一个 TCP 连接在 Node.js 中从建立到 <code>end</code> 事件触发，经历了哪些系统调用？</li>
+    <li>如何在不重启进程的情况下更新 Server 的 TLS 证书？</li>
+    <li><code>require('foo')</code> 的完整查找路径是什么？如何 hook <code>require</code>？</li>
+    <li>一个 Transform stream 的 <code>_transform</code> 被调用 100 次但下游消费慢了，上游数据去哪了？</li>
+    <li><code>Buffer.from('abc')</code> 和 <code>Buffer.allocUnsafe(3).fill('abc')</code> 的内存区别？</li>
+    <li>在不阻塞 Event Loop 的前提下，如何并行计算 1000 个大整数的质因数分解？</li>
+  </ol>
+</div>
+
+<div class="note">
+  <strong>💡 心法：</strong>精通不是每个 API 都背下来，而是理解其设计哲学——异步非阻塞 I/O、事件驱动、流式处理、轻量级进程模型。当你能用这些哲学做设计决策，而不是无脑选框架时，你就精通了。
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<hr id="part2">
+<h1>第二部分：从 Node.js 调用操作系统底层接口</h1>
+
+<h2>先明确目标：四个层级</h2>
+
+<div class="layer-diagram">
+  <div class="layer l1">Layer 1  &nbsp; exec / spawn 调系统命令 &nbsp; → &nbsp; 懂 OS 命令即可</div>
+  <div class="layer l2">Layer 2  &nbsp; FFI 调动态库 (.dll / .so) &nbsp; → &nbsp; 懂 C ABI、类型映射</div>
+  <div class="layer l3">Layer 3  &nbsp; N-API / node-addon-api 写插件 &nbsp; → &nbsp; 懂 C/C++、V8 嵌入</div>
+  <div class="layer l4">Layer 4  &nbsp; 直接 syscall（极少）&nbsp; → &nbsp; 懂内核接口、架构差异</div>
+</div>
+
+<!-- ──────────────────────────────────────── -->
+<h2>Layer 1：child_process / exec</h2>
+<p><strong class="tag tag-both">通用</strong> 覆盖 70% 场景</p>
+
+<pre><code><span class="cm">// Windows</span>
+execSync(<span class="str">'powershell Get-NetAdapter'</span>)
+execSync(<span class="str">'wmic cpu get name'</span>)
+
+<span class="cm">// Linux</span>
+execSync(<span class="str">'cat /proc/cpuinfo'</span>)
+execSync(<span class="str">'ip link show'</span>)</code></pre>
+
+<p><strong>需要知道：</strong></p>
+<ul>
+  <li>目标平台的常用命令行工具</li>
+  <li>输出解析（不同 locale / 版本输出格式不同，<strong>这是个常踩的坑</strong>）</li>
+  <li>参数注入防范（永远不要拼接用户输入到 shell 命令）</li>
+  <li><strong class="tag tag-win">Win</strong> <code>cmd.exe</code> 默认编码是 GBK → 需要 <code>{encoding: 'buffer'}</code> 或 <code>chcp 65001</code></li>
+</ul>
+
+<div class="tip"><strong>✅ 不需要 OS 内核知识。</strong></div>
+
+<!-- ──────────────────────────────────────── -->
+<h2>Layer 2：FFI 调用系统动态库（推荐优先学）</h2>
+<p>通过 <code>ffi-napi</code> / <code>koffi</code> / <code>bun:ffi</code> 直接调用 <code>.dll</code> / <code>.so</code>。</p>
+
+<h3>示例：调 Kernel32 获取系统信息</h3>
+
+<pre><code><span class="kw">const</span> koffi = require(<span class="str">'koffi'</span>);
+<span class="kw">const</span> kernel32 = koffi.load(<span class="str">'kernel32.dll'</span>);
+
+<span class="kw">const</span> SYSTEM_INFO = koffi.struct(<span class="str">'SYSTEM_INFO'</span>, {
+    wProcessorArchitecture: <span class="str">'uint16'</span>,
+    wReserved:              <span class="str">'uint16'</span>,
+    dwPageSize:             <span class="str">'uint32'</span>,
+    lpMinimumApplicationAddress: <span class="str">'void*'</span>,
+    lpMaximumApplicationAddress: <span class="str">'void*'</span>,
+    dwActiveProcessorMask:  <span class="str">'uint64'</span>,
+    dwNumberOfProcessors:   <span class="str">'uint32'</span>,
+});
+
+kernel32.stdcall(<span class="str">'GetSystemInfo'</span>, SYSTEM_INFO, [koffi.out(SYSTEM_INFO)]);</code></pre>
+
+<h3>2.1 C 类型系统与内存布局（必须精通）</h3>
+
+<table>
+  <tr><th>C 类型</th><th>Windows (LLP64)</th><th>Linux (LP64)</th><th>关键陷阱</th></tr>
+  <tr>
+    <td><code>long</code></td>
+    <td><strong>4 字节</strong></td>
+    <td><strong>8 字节</strong></td>
+    <td class="warn" style="border:none;margin:0;padding:0.4rem;">⚠️ 最大坑，两边完全不同</td>
+  </tr>
+  <tr><td><code>long long</code></td><td>8 字节</td><td>8 字节</td><td>✅ 一致</td></tr>
+  <tr><td><code>int</code></td><td>4 字节</td><td>4 字节</td><td>✅ 一致</td></tr>
+  <tr><td><code>size_t</code></td><td>8 字节 (x64)</td><td>8 字节 (x64)</td><td>✅ 一致</td></tr>
+  <tr><td><code>void*</code></td><td>8 字节 (x64)</td><td>8 字节 (x64)</td><td>✅ 一致</td></tr>
+  <tr>
+    <td><code>wchar_t</code></td>
+    <td><strong>2 字节 (UTF-16LE)</strong></td>
+    <td><strong>4 字节 (UTF-32)</strong></td>
+    <td class="warn" style="border:none;margin:0;padding:0.4rem;">⚠️ 编码宽度不同</td>
+  </tr>
+  <tr><td><code>TCHAR</code></td><td><code>char</code> 或 <code>wchar_t</code></td><td>不存在</td><td>Windows 专属</td></tr>
+</table>
+
+<h3>2.2 调用约定 (Calling Convention)</h3>
+
+<table>
+  <tr><th>平台</th><th>约定</th><th>规则</th></tr>
+  <tr>
+    <td><span class="tag tag-win">Win</span></td>
+    <td><code>stdcall</code></td>
+    <td>Win32 API 标准，<strong>被调用者清栈</strong></td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-win">Win</span></td>
+    <td><code>fastcall</code></td>
+    <td>x64 统一约定：前 4 个整数参数 → rcx, rdx, r8, r9</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-linux">Linux</span></td>
+    <td>System V AMD64</td>
+    <td>x64 统一约定：前 6 个整数参数 → rdi, rsi, rdx, rcx, r8, r9</td>
+  </tr>
+</table>
+
+<div class="warn">
+  <strong>⚠️ 致命坑：</strong>调用约定不匹配 → 栈损坏 → 进程崩溃。这是 FFI 调用中最常见的致命错误。
+</div>
+
+<h3>2.3 结构体对齐 (Alignment / Padding)</h3>
+
+<pre><code><span class="cm">// ❌ 错误：按直觉写</span>
+<span class="kw">const</span> BAD = koffi.struct(<span class="str">'BAD'</span>, {
+    a: <span class="str">'uint8'</span>,   <span class="cm">// offset 0</span>
+    b: <span class="str">'uint32'</span>,  <span class="cm">// offset 1 ← 错！实际 C 编译 offset 是 4</span>
+    c: <span class="str">'uint16'</span>,  <span class="cm">// offset 5 ← 错！实际是 8</span>
+});
+<span class="cm">// 你以为大小 7，实际是 12，b 的 offset 错误</span>
+
+<span class="cm">// ✅ 正确：理解 alignment</span>
+<span class="kw">const</span> GOOD = koffi.struct(<span class="str">'GOOD'</span>, {
+    a: <span class="str">'uint8'</span>,   <span class="cm">// offset 0</span>
+    b: <span class="str">'uint32'</span>,  <span class="cm">// offset 4 ← 对齐到 4 字节边界</span>
+    c: <span class="str">'uint16'</span>,  <span class="cm">// offset 8</span>
+});</code></pre>
+
+<div class="note">
+  <strong>准则：</strong>要么用工具自动生成 binding，要么对着 C 的 <code>sizeof</code> 和 <code>offsetof</code> 结果逐字段验证。错一个字节 = UB（通常 segfault 或静默数据损坏）。
+</div>
+
+<h3>2.4 字符串编码</h3>
+
+<table>
+  <tr><th>平台</th><th>API</th><th>编码</th></tr>
+  <tr><td><span class="tag tag-win">Win</span> Win32 API (W)</td><td>CreateFileW, ReadFileW</td><td><strong>UTF-16LE</strong> (wchar_t* = 2 字节)</td></tr>
+  <tr><td><span class="tag tag-win">Win</span> Win32 API (A)</td><td>CreateFileA</td><td>ANSI (系统代码页)</td></tr>
+  <tr><td><span class="tag tag-win">Win</span> CRT</td><td>printf, fopen</td><td>char* (UTF-8 或系统代码页)</td></tr>
+  <tr><td><span class="tag tag-linux">Linux</span> glibc</td><td>一切 char*</td><td>通常是 UTF-8</td></tr>
+  <tr><td><span class="tag tag-linux">Linux</span> wchar_t</td><td>宽字符 API</td><td><strong>UTF-32</strong> (4 字节)</td></tr>
+</table>
+
+<div class="note">
+  <strong>实战坑：</strong>Node.js 的 <code>Buffer.toString('utf16le')</code> 能给 Windows API 用，但 Linux 接到的是 UTF-32，别弄混。
+</div>
+
+<h3>2.5 指针与内存生命周期</h3>
+
+<pre><code><span class="kw">const</span> buf = Buffer.alloc(<span class="num">256</span>);
+NativeFunction(buf);
+<span class="cm">// buf 在下次 GC 前不会被回收吗？← 不确定！</span></code></pre>
+
+<ul>
+  <li><strong>规则 1：</strong>确保 JS 变量在 C 使用期间保持引用</li>
+  <li><strong>规则 2：</strong>C 侧如果要保存指针，<strong>必须在 C 堆上分配</strong>，不能指回 V8 堆。V8 的 compacting GC 会移动对象</li>
+  <li><strong>规则 3：</strong>Buffer 的底层 ArrayBuffer 通常固定在 V8 外，相对安全，但不是绝对的</li>
+</ul>
+
+<!-- ──────────────────────────────────────── -->
+<h2>Layer 3：N-API / node-addon-api 写 C++ 插件</h2>
+<p>当你需要的不是 1-2 个 API 调用，而是一个完整的 C++ 库集成（OpenCV、硬件驱动 SDK）。</p>
+
+<h3>示例：调 GetDiskFreeSpace</h3>
+
+<pre><code><span class="cm">// 用 node-addon-api (C++ 封装层)</span>
+<span class="kw">#include</span> <span class="str">&lt;napi.h&gt;</span>
+<span class="kw">#include</span> <span class="str">&lt;windows.h&gt;</span>
+
+Napi::Value <span class="fn">GetDiskFreeSpace</span>(<span class="kw">const</span> Napi::CallbackInfo&amp; info) {
+    Napi::Env env = info.Env();
+
+    DWORD sectorsPerCluster, bytesPerSector, freeClusters, totalClusters;
+    BOOL result = GetDiskFreeSpaceW(
+        <span class="str">L"C:\\"</span>,            <span class="cm">// 实际应从参数获取</span>
+        &amp;sectorsPerCluster,
+        &amp;bytesPerSector,
+        &amp;freeClusters,
+        &amp;totalClusters
+    );
+
+    <span class="kw">if</span> (!result) {
+        DWORD err = GetLastError();  <span class="cm">// ← 必须立即取！</span>
+        Napi::Error::New(env, <span class="str">"GetDiskFreeSpace failed: "</span> + std::to_string(err))
+            .ThrowAsJavaScriptException();
+        <span class="kw">return</span> env.Undefined();
+    }
+
+    <span class="cm">// 用 ULONGLONG 避免乘法溢出</span>
+    ULONGLONG freeBytes = <span class="kw">static_cast</span>&lt;ULONGLONG&gt;(freeClusters)
+                        * sectorsPerCluster * bytesPerSector;
+
+    <span class="kw">return</span> Napi::Number::New(env, <span class="kw">static_cast</span>&lt;<span class="kw">double</span>&gt;(freeBytes));
+}</code></pre>
+
+<h3>3.1 你需要的 C++ 基础</h3>
+<ul>
+  <li>RAII、智能指针、异常安全</li>
+  <li>多线程与互斥锁（<code>uv_queue_work</code> 把重活放到 libuv 线程池）</li>
+  <li>内存管理：<code>new</code>/<code>delete</code> vs <code>malloc</code>/<code>free</code> 不能混用</li>
+</ul>
+
+<h3>3.2 V8 嵌入模型</h3>
+<ul>
+  <li><strong>Handle / HandleScope</strong>：GC 根管理，HandleScope 溢出 = 内存泄漏</li>
+  <li><strong>Isolate / Context</strong>：理解 V8 隔离模型，<code>worker_threads</code> 每个线程有独立 Isolate</li>
+  <li><strong>Persistent handle</strong>：跨 GC 保持引用的唯一方式，必须手动 <code>Reset()</code></li>
+  <li><strong>FunctionTemplate / ObjectTemplate</strong>：原型链映射</li>
+</ul>
+
+<div class="warn">
+  <strong>⚠️ Native Addon 第一大坑：线程安全</strong><br>
+  C++ addon 的回调可能来自多个线程：
+  <ul style="margin-bottom:0;">
+    <li>Node.js Event Loop 线程 → ✅ 安全，可以调 JS</li>
+    <li>你自己的 C++ 线程 → ❌ 不安全！必须用 <code>Napi::ThreadSafeFunction</code> 桥接到 JS</li>
+    <li>libuv 线程池 → 通过 <code>uv_async_send</code> 通知主线程</li>
+  </ul>
+  错误的线程访问 V8 对象 → <strong>随机崩溃</strong>。
+</div>
+
+<h3>3.3 Windows 特有知识</h3>
+
+<table>
+  <tr><th>你需要懂的</th><th>为什么</th></tr>
+  <tr><td><code>HANDLE</code> 的引用计数</td><td><code>CloseHandle</code> 忘了 = 句柄泄漏 → 无法打开新文件/进程</td></tr>
+  <tr><td>ANSI vs Unicode API</td><td>坚持用 <code>W</code> 后缀（<code>CreateFileW</code>），永远不用 <code>A</code> 后缀</td></tr>
+  <tr><td><code>GetLastError()</code> 必须立即取</td><td>任何后续 API 调用可能覆盖 error code</td></tr>
+  <tr><td>SEH 结构化异常</td><td><code>__try/__except</code> 与 C++ <code>try/catch</code> 是不同的两套机制；访问违规 (0xC0000005) 只能用 SEH</td></tr>
+  <tr><td>COM 模型</td><td>WMI / DirectX / Shell：<code>CoInitializeEx</code>、<code>IUnknown::Release</code>、STA vs MTA</td></tr>
+  <tr><td>权限模型</td><td>UAC、完整性级别、SeImpersonatePrivilege</td></tr>
+</table>
+
+<h3>3.4 Linux 特有知识</h3>
+
+<table>
+  <tr><th>你需要懂的</th><th>为什么</th></tr>
+  <tr><td><code>errno</code></td><td>系统调用失败后必须检查，全局线程局部存储</td></tr>
+  <tr><td>内存映射 <code>mmap</code></td><td>MAP_SHARED vs MAP_PRIVATE vs MAP_ANONYMOUS vs MAP_POPULATE</td></tr>
+  <tr><td>文件描述符 FD</td><td>FD 泄漏 = 文件描述符耗尽 = EMFILE</td></tr>
+  <tr><td>信号安全</td><td><code>sigaction</code> 的异步信号安全函数列表；信号处理器中能干的事极少</td></tr>
+  <tr><td>cgroup / namespace</td><td>容器感知：<code>/proc/self/cgroup</code>、是否在容器内</td></tr>
+  <tr><td>Capabilities</td><td><code>CAP_NET_RAW</code> 等能力</td></tr>
+</table>
+
+<!-- ──────────────────────────────────────── -->
+<h2>Layer 4：直接 syscall（极少需要）</h2>
+<p>Node.js 本身不直接 syscall，一切通过 libuv → 系统调用。</p>
+
+<pre><code><span class="kw">const</span> libc = koffi.load(<span class="str">'libc.so.6'</span>);
+libc.stdcall(<span class="str">'syscall'</span>, <span class="str">'long'</span>, [<span class="str">'long'</span>, <span class="str">'...'</span>]);
+
+<span class="cm">// gettid() - glibc 可能不暴露</span>
+<span class="kw">const</span> tid = libc.syscall(<span class="num">186</span>); <span class="cm">// SYS_gettid on x86-64</span></code></pre>
+
+<ul>
+  <li>x86-64 syscall 编号（<code>/usr/include/asm/unistd_64.h</code>），不同架构不同编号</li>
+  <li>寄存器传参约定（rax=syscall number, rdi/rsi/rdx/r10/r8/r9 依次传参）</li>
+  <li>不同内核版本 syscall 行为差异</li>
+  <li><span class="tag tag-win">Win</span> Windows <strong>没有直接 syscall 接口</strong>，必须通过 ntdll.dll（NTDLL 是用户态到内核态的最终边界）</li>
+</ul>
+
+<!-- ──────────────────────────────────────── -->
+<h2>实战选层指南</h2>
+
+<table>
+  <tr><th>你的场景</th><th>选哪层</th></tr>
+  <tr><td>调系统命令、脚本</td><td><strong>Layer 1</strong> — child_process</td></tr>
+  <tr><td>偶尔调 1-2 个系统 API</td><td><strong>Layer 2</strong> — FFI / koffi ⭐ 推荐</td></tr>
+  <tr><td>集成 C/C++ 库、性能敏感、驱动级</td><td><strong>Layer 3</strong> — N-API</td></tr>
+  <tr><td>研究、逆向、内核交互</td><td><strong>Layer 4</strong> — 直接 syscall</td></tr>
+</table>
+
+<div class="tip">
+  <strong>⭐ 推荐：</strong>对大多数 Node.js 工程师，<strong>Layer 2（koffi）是最佳平衡点</strong>——不需要写 C++ / 编译 .node 文件，但需要你深刻理解 C ABI。Layer 3 投入巨大，只在确实必要时才做。
+</div>
+
+<hr>
+
+<div class="card">
+  <h2 style="margin-top:0; border:none; padding:0; color:#fff;">🧠 最关键的心法</h2>
+  <p style="font-size:1.1rem; margin-bottom:0;">
+    <strong>你在 JavaScript 的堆上跑，但在 C 的栈上死。</strong><br>
+    每次 FFI 调用都是一次跨越 V8 沙箱边界的跳跃。<br>
+    能安全来回的，是那些精确理解了两边<strong>内存模型</strong>的人。
+  </p>
+</div>
+
+<p>把 <code>koffi</code> 的 struct 定义写得和 C 的 <code>sizeof()</code> 一模一样，把 <code>GetLastError()</code> 和 <code>errno</code> 在正确时机取出，把每个 HANDLE/FD 的生命周期管理清楚——这些就是区分"能用"和"精通"的地方。</p>
+
+<div class="footer">
+  Generated with Claude Code · 2026-06-23
+</div>
+
+</body>
+</html>
