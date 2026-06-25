@@ -46,6 +46,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 用户随口问的、不在提纲里的话题 → 正常回答，但**不追加到 HTML**
 - 用户针对提纲条目的深入提问 → 回答后**追加到对应 HTML 的相应位置**
 - 追加的新 section 格式：`<h2>X·附：具体展开标题</h2>`（X 为所属章节编号）
+- 新增或拆分章节/知识点时必须**同步更新目录**（`.section-nav`），保证目录与内容一致
+- 如果用户在项目里问了某个话题，且恰好有对应的 HTML 文件（或文件内的章节），则回答后须**同步更新**到该 HTML 中
 
 ## 文件组织
 
