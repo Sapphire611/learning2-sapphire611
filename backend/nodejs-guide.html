@@ -291,8 +291,11 @@
     <li style="padding-left:2.4rem;font-size:0.85rem;"><a href="#s2-1-3">UV_THREADPOOL_SIZE 调优</a></li>
     <li style="padding-left:1.2rem;font-size:0.9rem;"><a href="#s2-2">2.2 V8 堆结构</a></li>
     <li style="padding-left:2.4rem;font-size:0.85rem;"><a href="#s2-2-1">V8 堆结构与 GC 详解</a></li>
+    <li style="padding-left:3.2rem;font-size:0.8rem;"><a href="#s2-2-2">三种算法一张图总结</a></li>
     <li style="padding-left:1.2rem;font-size:0.9rem;"><a href="#s2-3">2.3 堆快照分析</a></li>
+    <li style="padding-left:2.4rem;font-size:0.85rem;"><a href="#s2-3-1">堆快照分析实操（可复现）</a></li>
     <li style="padding-left:1.2rem;font-size:0.9rem;"><a href="#s2-4">2.4 内存安全实践</a></li>
+    <li style="padding-left:2.4rem;font-size:0.85rem;"><a href="#s2-4-1">闭包泄漏、Buffer 爆炸、Stream 消费详解</a></li>
     <li style="padding-left:1.2rem;font-size:0.9rem;"><a href="#s2-5">2.5 Buffer 与二进制数据</a></li>
     <li><a href="#part2">第二部分：调用操作系统底层接口</a> — 四个层级深度剖析</li>
   </ul>
@@ -2104,6 +2107,36 @@ process.env.UV_THREADPOOL_SIZE = <span class="num">8</span>;
   ③ <strong>GC 不是你的敌人</strong>——正常业务代码 V8 处理得很好，别过度优化
 </div>
 
+<h3 id="s2-2-2">🧠 一张图总结三种算法</h3>
+
+<pre><code><span class="cm">// ═══════════════════════════════════════════════════════</span>
+<span class="cm">//  Scavenge：只拷贝活着的，剩下的全扔掉</span>
+<span class="cm">// ═══════════════════════════════════════════════════════</span>
+<span class="cm">//  GC 前：</span>
+<span class="cm">//   From [A][B][C][死][死]     To [ ][ ][ ][ ][ ]</span>
+<span class="cm">//               ↓ 活对象拷到 To，紧密排列</span>
+<span class="cm">//   From 整块清空               To [A][B][C][ ][ ]</span>
+<span class="cm">//   From ↔ To 角色互换，下次 GC 再来</span>
+
+<span class="cm">// ═══════════════════════════════════════════════════════</span>
+<span class="cm">//  Mark-Sweep：先标记谁活着，再回收死了的</span>
+<span class="cm">// ═══════════════════════════════════════════════════════</span>
+<span class="cm">//  GC 前： [A][B][死][C][死]</span>
+<span class="cm">//           ↓ 标记活对象 A、B、C → 清除死的</span>
+<span class="cm">//  GC 后： [A][B][ ][C][ ]     ← 空洞还在！碎片就这么来的</span>
+
+<span class="cm">// ═══════════════════════════════════════════════════════</span>
+<span class="cm">//  Mark-Compact：把所有活对象推到一端挤紧</span>
+<span class="cm">// ═══════════════════════════════════════════════════════</span>
+<span class="cm">//  GC 前： [A][ ][B][ ][ ][C]   ← 碎片遍地</span>
+<span class="cm">//           ↓ 所有活对象推到左端</span>
+<span class="cm">//  GC 后： [A][B][C][ ][ ][ ]   ← 连续了，大对象放得下了</span>
+
+<span class="cm">// ═══════════════════════════════════════════════════════</span>
+<span class="cm">//  三件套协同：</span>
+<span class="cm">//  新生代 Scavenge ──→ 活过两次晋升 ──→ 老生代 Mark-Sweep 日常</span>
+<span class="cm">//                                       碎片严重时 Mark-Compact 救场</span></code></pre>
+
 <div class="note">
   <strong>💡 记三句话：</strong><br>
   • 新生代 = 双空间拷贝，快但空间利用率 50%，对象活过两次就晋升<br>
@@ -2115,12 +2148,690 @@ process.env.UV_THREADPOOL_SIZE = <span class="num">8</span>;
 <h3 id="s2-3">2.3 堆快照分析</h3>
 <ul>
   <li>能分析 heap snapshot 找到 Retained Size 最大的对象</li>
+  <li>会用 Comparison 视图对比两次快照定位泄漏</li>
+  <li>能用 --inspect + Chrome DevTools 完整复现分析流程</li>
 </ul>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 🔍 展开：堆快照分析实操 -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<h2 id="s2-3-1">2.3·附：堆快照分析实操（Chrome DevTools 可复现）</h2>
+
+<h3>🎯 一句话讲清堆快照是什么</h3>
+
+<p>堆快照（Heap Snapshot）就是 JS 堆在某一时刻的<strong>完整照片</strong>——拍下了当时所有活着的对象、它们之间的引用关系、以及每个对象占了多少内存。你拿着这张照片可以找到"谁最大"、"谁不必要地活着"、"谁在两次快照之间冒出来了"。</p>
+
+<div class="card">
+  <strong style="color:#fff;">三个核心指标：</strong>
+  <table style="margin:0.5rem 0 0;">
+    <tr><td><strong>Shallow Size</strong></td><td>对象<strong>自身</strong>占用的内存（不算它引用的东西）</td></tr>
+    <tr><td><strong>Retained Size</strong></td><td>对象自身 + 它<strong>独占引用的所有子对象</strong>的内存总和。删掉这个对象能释放多少内存——这是找泄漏的<strong>核心指标</strong></td></tr>
+    <tr><td><strong>Distance</strong></td><td>从 GC 根（root）到这个对象最短要经过几层引用</td></tr>
+  </table>
+</div>
+
+<h3>🛠️ 第一步：启动 Node.js 并接入 Chrome DevTools</h3>
+
+<h4>方式一：--inspect-brk（推荐，从第一行就能调试）</h4>
+<pre><code><span class="cm"># 启动时加上 --inspect-brk，Node 会在第一行代码之前暂停</span>
+node --inspect-brk app.js
+
+<span class="cm"># 输出类似：</span>
+<span class="cm"># Debugger listening on ws://127.0.0.1:9229/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</span></code></pre>
+
+<h4>方式二：--inspect（不停，直接跑）</h4>
+<pre><code>node --inspect app.js
+
+<span class="cm"># 如果已经跑起来了，也可以发 SIGUSR1 信号激活（Linux/macOS）</span>
+kill -SIGUSR1 &lt;pid&gt;
+
+<span class="cm"># Windows 上没有办法发信号，所以建议一开始就用 --inspect</span></code></pre>
+
+<h4>然后打开 Chrome DevTools</h4>
+<ol>
+  <li>打开 Chrome 浏览器，地址栏输入 <code>chrome://inspect</code></li>
+  <li>在 "Remote Target" 区域会看到你的 Node.js 进程</li>
+  <li>点击 <strong>inspect</strong> 链接 → 弹出 DevTools 窗口</li>
+</ol>
+
+<div class="tip">
+  <strong>💡 DevTools 连接上了，但没看到 Memory 面板？</strong>点 DevTools 右上角的 <code>⋮</code> → More tools → Memory（Memory 面板默认不显示）。<br>
+  或者直接切到顶部的 <strong>Memory</strong> 标签（新版 Chrome 默认就有）。
+</div>
+
+<h3>📸 第二步：拍一张堆快照</h3>
+
+<p>在 DevTools 的 Memory 面板中：</p>
+
+<ol>
+  <li>选中 <strong>Heap snapshot</strong> 单选按钮</li>
+  <li>点击底部的 <strong>Take snapshot</strong> 按钮</li>
+  <li>等待几秒（堆越大越久）→ 快照出现在左侧列表</li>
+</ol>
+
+<div class="note">
+  <strong>📌 抓快照的时机很重要：</strong><br>
+  • <strong>基准快照</strong>：系统刚启动、还没跑业务逻辑时（用 <code>--inspect-brk</code> 先暂停，拍一张）<br>
+  • <strong>压力后快照</strong>：跑完一轮压测 / 业务操作后<br>
+  • <strong>对比找差异</strong>：两张快照之间多出来的对象，很可能就是泄漏
+</div>
+
+<h3>🔍 第三步：看懂 Summary 视图</h3>
+
+<p>拍完快照后，默认显示 <strong>Summary</strong> 视图。顶部下拉框可选：</p>
+
+<table>
+  <tr><th>视图</th><th>用途</th></tr>
+  <tr>
+    <td><strong>Summary</strong></td>
+    <td>按<strong>构造函数名</strong>分组，看哪些类型的对象最多/最大。默认按 Retained Size 排序</td>
+  </tr>
+  <tr>
+    <td><strong>Comparison</strong></td>
+    <td>对比<strong>两张快照</strong>，找出新增、删除、变化的对象。定位泄漏的<strong>核心武器</strong></td>
+  </tr>
+  <tr>
+    <td><strong>Containment</strong></td>
+    <td>按<strong>引用层级</strong>从根往下看，适合理解对象的引用链——"这个东西是被谁抓着不放的？"</td>
+  </tr>
+  <tr>
+    <td><strong>Statistics</strong></td>
+    <td>按类型看内存分布饼图，一眼看出什么类型占了最多内存</td>
+  </tr>
+</table>
+
+<h4>Summary 视图怎么读</h4>
+
+<p>打开 Summary，你会看到一个表格：</p>
+
+<table>
+  <tr><th>Constructor</th><th>Distance</th><th>Shallow Size</th><th>Retained Size</th></tr>
+  <tr><td>（对象的构造函数名）</td><td>离 GC root 几步</td><td>自身大小</td><td>自身 + 独占引用</td></tr>
+</table>
+
+<div class="tip">
+  <strong>🎯 操作要点：</strong><br>
+  ① 点击 <strong>Retained Size</strong> 列头，按降序排列——排最前面的就是"删了能释放最多内存"的对象<br>
+  ② 展开某个构造函数行（点左侧 ▶），可以看到该类<strong>每个实例</strong>各自占了多少<br>
+  ③ 选中某个实例，底部会显示它的 <strong>Retainers</strong>（谁在引用它）——这就是引用链，沿着链往上就能找到"根因"
+</div>
+
+<h3>🎯 第四步：找到 Retained Size 最大的对象</h3>
+
+<p><strong>操作流程（跟着做）：</strong></p>
+
+<ol>
+  <li>在 Summary 视图，点击 <strong>Retained Size</strong> 列头，确保按降序排列</li>
+  <li>看最上面几行——通常是 <code>(compiled code)</code>、<code>(system)</code> 等系统对象，<strong>跳过它们</strong></li>
+  <li>往下找<strong>你的代码里</strong>出现的构造函数名：如自定义类、<code>Object</code>、<code>Array</code>、<code>Closure</code>（闭包）、<code>Buffer</code> 等</li>
+  <li>展开那条构造函数行，找到 Retained Size 最大的那个<strong>具体实例</strong></li>
+  <li>选中它，看下方的 <strong>Retainers</strong> 面板——这是"谁在抓着它"</li>
+</ol>
+
+<h4>Retainers 面板怎么读</h4>
+
+<p>选了具体实例后，底部 Retainers 面板显示一条引用链。例如：</p>
+
+<pre><code><span class="cm">// Retainers 面板显示的引用链（从被选中对象一直追溯到 GC root）</span>
+
+myLeakyObject @12345          <span class="cm">← 你选中的对象</span>
+  ↳ leakyArray 在 MyServer @12340   <span class="cm">← MyServer 实例的 leakyArray 属性引用了它</span>
+    ↳ server 在 Object @12300        <span class="cm">← 全局对象上有 server 引用</span>
+      ↳ global / Window              <span class="cm">← GC root（到这里就追到头了）</span></code></pre>
+
+<div class="card">
+  <strong style="color:#fff;">🔑 读 Retainers 的黄金法则：</strong>从下往上读，找到<strong>离根最近的那个不该存在的引用</strong>。如果引用链一直追溯到 global / Window / <code>require.cache</code>，那这个对象<strong>永远不可能被 GC</strong>。
+</div>
+
+<h3>🧪 实战：制造一个内存泄漏，然后亲手抓到它</h3>
+
+<h4>第 1 步：写一个带泄漏的 demo</h4>
+
+<pre><code><span class="cm">// leak-demo.js —— 故意写的内存泄漏</span>
+<span class="kw">const</span> http = require(<span class="str">'http'</span>);
+
+<span class="cm">// 💣 泄漏点：所有请求的 body 永不过期地存在这个数组里</span>
+<span class="kw">const</span> leakedRequests = [];
+
+<span class="kw">function</span> <span class="fn">processRequest</span>(data) {
+  <span class="cm">// 假装在处理数据，实际上只取了一个字段用</span>
+  <span class="kw">const</span> parsed = JSON.parse(data);
+  <span class="cm">// ❌ 但把整个 parsed 塞进了全局数组，再也不清理</span>
+  leakedRequests.push({
+    time: Date.now(),
+    data: parsed,            <span class="cm">// ← 大对象被永久持有</span>
+  });
+  <span class="kw">return</span> { id: parsed.id, ok: <span class="kw">true</span> };
+}
+
+<span class="kw">const</span> server = http.createServer((req, res) => {
+  <span class="kw">let</span> body = <span class="str">''</span>;
+  req.on(<span class="str">'data'</span>, chunk => body += chunk);
+  req.on(<span class="str">'end'</span>, () => {
+    <span class="cm">// 每次请求发一个 100KB 的 payload</span>
+    <span class="kw">const</span> result = processRequest(body);
+    res.end(JSON.stringify(result));
+  });
+});
+
+server.listen(<span class="num">3000</span>, () => console.log(<span class="str">'listening on 3000'</span>));</code></pre>
+
+<h4>第 2 步：启动并接入 DevTools</h4>
+
+<pre><code><span class="cm"># 终端 1：启动 Node</span>
+node --inspect-brk leak-demo.js
+
+<span class="cm"># 打开 Chrome → chrome://inspect → 点击 inspect</span></code></pre>
+
+<h4>第 3 步：拍基准快照（泄漏前）</h4>
+
+<ol>
+  <li>DevTools 连上后，先在 Memory 面板拍第一张快照 → 命名为 <strong>"Snapshot 1 - 基准"</strong></li>
+  <li>在 DevTools 的 Sources 面板点击继续执行（或 F8），让服务启动</li>
+</ol>
+
+<h4>第 4 步：给服务施加压力</h4>
+
+<pre><code><span class="cm"># 终端 2：用脚本连续发 100 个请求，每个携带 100KB 的 payload</span>
+<span class="cm"># Windows PowerShell / Git Bash 都可以跑</span>
+node -e <span class="str">"
+const http = require('http');
+let count = 0;
+function send() {
+  if (count >= 100) { console.log('done'); return; }
+  const data = JSON.stringify({ id: count, payload: 'x'.repeat(100 * 1024) });
+  const req = http.request({ hostname: '127.0.0.1', port: 3000, method: 'POST',
+    headers: { 'Content-Length': Buffer.byteLength(data) } }, res => {
+      res.on('data', () => {});
+      res.on('end', () => { count++; send(); });
+  });
+  req.write(data);
+  req.end();
+}
+send();
+"</span></code></pre>
+
+<h4>第 5 步：拍第二张快照 + 对比</h4>
+
+<ol>
+  <li>100 个请求跑完后，在 Memory 面板拍第二张快照 → 命名为 <strong>"Snapshot 2 - 泄漏后"</strong></li>
+  <li>从顶部的下拉框切换到 <strong>Comparison</strong> 视图</li>
+  <li>Comparison 会显示 Snapshot 2 相对于 Snapshot 1 <strong>多了什么</strong></li>
+</ol>
+
+<h4>第 6 步：在 Comparison 视图中抓住泄漏</h4>
+
+<p>Comparison 视图的列：</p>
+
+<table>
+  <tr><th>列</th><th>含义</th></tr>
+  <tr><td><code># New</code></td><td>快照 2 比快照 1 <strong>新增</strong>了多少个这种对象</td></tr>
+  <tr><td><code># Deleted</code></td><td>快照 2 比快照 1 <strong>减少</strong>了多少个</td></tr>
+  <tr><td><code># Delta</code></td><td>净变化（正数 = 多了，负数 = 少了）</td></tr>
+  <tr><td><code>Alloc. Size</code></td><td>新增对象自身的总大小</td></tr>
+  <tr><td><code>Freed Size</code></td><td>释放对象自身的总大小</td></tr>
+  <tr><td><code>Size Delta</code></td><td>净内存变化</td></tr>
+</table>
+
+<div class="warn">
+  <strong>🔍 定位泄漏的关键操作：</strong><br>
+  ① 在 Comparison 视图按 <strong>Size Delta</strong> 降序排列<br>
+  ② 看 # New 很大但 # Deleted 很小的构造函数 → 这些对象<strong>只增不减</strong>，就是泄漏<br>
+  ③ 展开该行，选中一个具体实例 → 看底部的 Retainers，追溯它被谁抓着<br>
+  ④ 你会看到引用链指向 <code>leakedRequests</code> 数组 → 这就是泄漏的根因
+</div>
+
+<h3>🧩 Containment 视图：沿着引用链往下挖</h3>
+
+<p>当你已经怀疑某个"大对象"（比如一个超大数组）被谁持有时，用 Containment 视图最直接：</p>
+
+<ol>
+  <li>切换到 <strong>Containment</strong> 视图</li>
+  <li>从顶层展开 <code>GC roots</code> → 看到所有根引用</li>
+  <li>一路往下展开，直到找到你怀疑的那个对象</li>
+  <li>或者直接在顶部搜索框输入对象类名/变量名（如 <code>leakedRequests</code>），直接定位</li>
+</ol>
+
+<pre><code><span class="cm">// Containment 视图的结构（从根往下走）</span>
+<span class="cm">// GC roots</span>
+<span class="cm">//   └─ Object (global)</span>
+<span class="cm">//       └─ Object (module exports)</span>
+<span class="cm">//           └─ Array (leakedRequests)  ← 找到了！</span>
+<span class="cm">//               ├─ Object @1001        ← 请求 1 的数据</span>
+<span class="cm">//               │   └─ Object (data)</span>
+<span class="cm">//               │       └─ String (payload: "xxxxxx...")  ← 100KB 的字符串</span>
+<span class="cm">//               ├─ Object @1002        ← 请求 2 的数据</span>
+<span class="cm">//               └─ ... ×100</span></code></pre>
+
+<h3>📊 常见三种视图的选择决策</h3>
+
+<table>
+  <tr><th>我想知道...</th><th>用什么视图</th></tr>
+  <tr>
+    <td>哪种类型的对象占内存最多？</td>
+    <td><strong>Summary</strong>，按 Retained Size 降序</td>
+  </tr>
+  <tr>
+    <td>两次操作之间多了什么对象（泄漏）？</td>
+    <td><strong>Comparison</strong>，按 Size Delta 降序</td>
+  </tr>
+  <tr>
+    <td>某个大对象是被谁引用的？</td>
+    <td>Summary 中选中实例 → 看底部 <strong>Retainers</strong></td>
+  </tr>
+  <tr>
+    <td>从根开始完整走一遍引用链？</td>
+    <td><strong>Containment</strong> 视图</td>
+  </tr>
+  <tr>
+    <td>按类型看内存分布比例？</td>
+    <td><strong>Statistics</strong> 饼图</td>
+  </tr>
+</table>
+
+<h3>🧠 Node.js 专属：四种抓快照的方式</h3>
+
+<p>除了 DevTools 手动拍，Node.js 还支持编程式抓快照：</p>
+
+<h4>方式 1：v8.writeHeapSnapshot()（推荐，最实用）</h4>
+<pre><code><span class="kw">const</span> v8 = require(<span class="str">'v8'</span>);
+<span class="kw">const</span> fs = require(<span class="str">'fs'</span>);
+
+<span class="cm">// 任何时候调用，在当前目录生成 .heapsnapshot 文件</span>
+v8.writeHeapSnapshot();
+<span class="cm">// 输出：Heap-20260626-143052-12345.heapsnapshot</span>
+
+<span class="cm">// 也可以指定文件名</span>
+v8.writeHeapSnapshot(<span class="str">'/tmp/heap-'</span> + Date.now() + <span class="str">'.heapsnapshot'</span>);
+
+<span class="cm">// ✅ 生成的 .heapsnapshot 文件直接拖进 Chrome DevTools Memory 面板就能分析</span></code></pre>
+
+<h4>方式 2：heapdump 包（更灵活）</h4>
+<pre><code><span class="cm"># 安装</span>
+npm install heapdump
+
+<span class="cm">// 代码里用</span>
+<span class="kw">const</span> heapdump = require(<span class="str">'heapdump'</span>);
+heapdump.writeSnapshot(<span class="str">'/tmp/snapshot-'</span> + Date.now() + <span class="str">'.heapsnapshot'</span>);</code></pre>
+
+<h4>方式 3：chrome://inspect 的 Take snapshot（刚才演示的）</h4>
+
+<h4>方式 4：用 clinic 或 0x 等性能工具（生产排查）</h4>
+<pre><code><span class="cm"># clinic 会自动在 GC 事件时抓快照</span>
+npm install -g clinic
+clinic heapprofiler -- node app.js</code></pre>
+
+<div class="tip">
+  <strong>🏭 生产环境最佳实践：</strong>在代码里埋点，当内存超过阈值（如 <code>process.memoryUsage().heapUsed > 500MB</code>）时自动调用 <code>v8.writeHeapSnapshot()</code>。生成的 .heapsnapshot 文件拷回本地，拖进 Chrome DevTools 分析。
+</div>
+
+<h3>🕵️ 常见内存泄漏模式 + 在快照中的表现</h3>
+
+<table>
+  <tr><th>泄漏模式</th><th>在快照中表现为</th><th>怎么在 DevTools 里确认</th></tr>
+  <tr>
+    <td><strong>全局变量 / 模块缓存</strong></td>
+    <td>某个数组/Object 的 Retained Size 不断增长</td>
+    <td>Containment 视图展开 global → 找到你的变量，看它下面的子对象数量</td>
+  </tr>
+  <tr>
+    <td><strong>忘记 clearInterval / 事件监听</strong></td>
+    <td>Closure（闭包）数量异常多，且 Retainers 指向定时器或 EventEmitter</td>
+    <td>Summary 中筛选 "(closure)"，展开看 Retainers 是否连着 timer / socket</td>
+  </tr>
+  <tr>
+    <td><strong>Stream 没销毁</strong></td>
+    <td>ReadableState / WritableState 对象持续增长</td>
+    <td>Summary 中搜 "Readable" / "Writable"，看实例数量是否只增不减</td>
+  </tr>
+  <tr>
+    <td><strong>闭包误抓大对象</strong></td>
+    <td>一个很小的 Closure 的 Retained Size 大得不成比例</td>
+    <td>展开 (closure)，按 Retained Size 排序，最大的那个可能"不小心"抓了 Buffer/大字符串</td>
+  </tr>
+  <tr>
+    <td><strong>Map / Set / WeakMap 误用</strong></td>
+    <td>Map/Set 的 Retained Size 很大，且 key 都是不该长期存在的对象</td>
+    <td>展开 Map/Set 行 → 看 key 是什么 → 如果 key 是请求对象/临时变量就说明用错了（该用 WeakMap）</td>
+  </tr>
+</table>
+
+<h3>📋 操作清单：从零到定位泄漏的完整流程</h3>
+
+<div class="card">
+  <ol style="margin-bottom:0;">
+    <li><strong>启动</strong>：<code>node --inspect-brk app.js</code> + Chrome <code>chrome://inspect</code></li>
+    <li><strong>基准快照</strong>：服务启动后、未施压前拍第一张（Snapshot 1）</li>
+    <li><strong>施压</strong>：跑业务请求 / 压测脚本</li>
+    <li><strong>第二张快照</strong>：压测完成后拍（Snapshot 2）</li>
+    <li><strong>Comparison</strong>：切换到 Comparison 视图，看 Size Delta 最大的构造函数</li>
+    <li><strong>钻入实例</strong>：展开构造函数行，选 Retained Size 最大的实例，看 Retainers</li>
+    <li><strong>追溯根因</strong>：沿 Retainers 引用链追到自己的代码 → 修掉不合理的全局引用/未清理的监听器</li>
+    <li><strong>重复验证</strong>：修完代码再跑一次，拍 Snapshot 3，与 Snapshot 1 对比确认无增长</li>
+  </ol>
+</div>
+
+<div class="note">
+  <strong>💡 记住这三点就够用了：</strong><br>
+  • <strong>Retained Size</strong> 才是找泄漏的指标——它代表"删了这对象能腾多少内存"<br>
+  • <strong>Comparison 视图</strong> 是找泄漏最快的路径——两次快照之间多出来的对象一清二楚<br>
+  • <strong>Retainers</strong> 告诉你"谁抓着它"——沿着链追到自己的代码就是根因
+</div>
 
 <h3 id="s2-4">2.4 内存安全实践</h3>
 <ul>
   <li>能写出不泄漏的闭包、不爆炸的 Buffer 使用、正确的 Stream 消费</li>
 </ul>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- 🔍 展开：内存安全实践详解 — 闭包泄漏、Buffer 爆炸、Stream 消费 -->
+<!-- ═══════════════════════════════════════════════ -->
+<h3 id="s2-4-1">2.4·附：内存安全实践详解</h3>
+
+<div class="note">
+  <strong>💡 心法：</strong>Node.js 的内存问题分三类——<strong>闭包抓太多</strong>（引用未释放）、<strong>Buffer 没上限</strong>（量太大撑爆）、<strong>Stream 没消费</strong>（背压失效导致积压）。本质都是<strong>"该放手时没放手"</strong>。GC 只能回收没人引用的对象，你的代码只要还抓着引用，GC 就无能为力。
+</div>
+
+<!-- ──────────────────────────────────────── -->
+<h4>一、闭包泄漏：不是你写了闭包就泄漏，是闭包抓了不该抓的</h4>
+
+<p>闭包的本质是函数携带了它的词法环境。每创建一个函数，它就引用着外层作用域的<strong>所有变量</strong>——哪怕你只用了一个。</p>
+
+<h4>❌ 经典泄漏 1：回调里抓了大对象</h4>
+
+<pre><code><span class="kw">function</span> <span class="fn">processUpload</span>(fileBuffer) {
+  <span class="kw">const</span> metadata = extractMetadata(fileBuffer);  <span class="cm">// 只需要这一小段</span>
+
+  <span class="cm">// ❌ 闭包引用了整个 fileBuffer（可能几百 MB）</span>
+  <span class="kw">const</span> cleanup = () => {
+    console.log(<span class="str">`处理完成: ${metadata.name}`</span>);
+    <span class="cm">// 这里没用到 fileBuffer,但闭包把整个外层作用域都抓了</span>
+  };
+
+  scheduleCleanup(cleanup);  <span class="cm">// cleanup 活着 → fileBuffer 不能被 GC</span>
+}</code></pre>
+
+<h4>✅ 修复：只传需要的数据</h4>
+
+<pre><code><span class="kw">function</span> <span class="fn">processUpload</span>(fileBuffer) {
+  <span class="kw">const</span> metadata = extractMetadata(fileBuffer);
+  <span class="kw">const</span> name = metadata.name;  <span class="cm">// 只取需要的字段</span>
+
+  <span class="cm">// ✅ 闭包只抓了 name（一个字符串），fileBuffer 可以被 GC</span>
+  <span class="kw">const</span> cleanup = () => console.log(<span class="str">`处理完成: ${name}`</span>);
+  scheduleCleanup(cleanup);
+}</code></pre>
+
+<h4>❌ 经典泄漏 2：事件监听器没取消</h4>
+
+<pre><code><span class="cm">// ❌ 每次请求注册一个监听器，从不移除</span>
+server.on(<span class="str">'request'</span>, (req) => {
+  <span class="kw">const</span> heavyData = loadHeavyData();  <span class="cm">// 很大的数据</span>
+
+  req.on(<span class="str">'end'</span>, () => {
+    <span class="cm">// end 事件的闭包引用了 heavyData
+    // 即使请求处理完了,这个闭包还挂在 req 上（req 可能被连接池复用）</span>
+    logRequest(heavyData);
+  });
+});</code></pre>
+
+<h4>✅ 修复：用完就解绑</h4>
+
+<pre><code>server.on(<span class="str">'request'</span>, (req) => {
+  <span class="kw">const</span> heavyData = loadHeavyData();
+
+  <span class="kw">const</span> onEnd = () => {
+    logRequest(heavyData);
+    req.removeListener(<span class="str">'end'</span>, onEnd);  <span class="cm">// ✅ 用完移除</span>
+  };
+  req.on(<span class="str">'end'</span>, onEnd);
+});</code></pre>
+
+<h4>❌ 经典泄漏 3：定时器/Interval 持有闭包</h4>
+
+<pre><code><span class="kw">let</span> sessions = <span class="kw">new</span> Map();
+
+<span class="kw">function</span> <span class="fn">createSession</span>(userData) {
+  <span class="kw">const</span> id = generateId();
+  sessions.set(id, userData);
+
+  <span class="cm">// ❌ 定时器持有的闭包引用了 userData
+  // userData 被 sessions 和 setInterval 双重持有
+  // 即使从 sessions 里 delete 了,定时器还抓着 → 泄漏</span>
+  <span class="kw">const</span> timer = setInterval(() => {
+    refreshToken(userData.token);
+  }, <span class="num">60000</span>);
+
+  <span class="kw">return</span> id;
+}</code></pre>
+
+<h4>✅ 修复：生命周期绑定，用 WeakRef 或主动清理</h4>
+
+<pre><code><span class="kw">const</span> timers = <span class="kw">new</span> Map();  <span class="cm">// sessionId → timer</span>
+
+<span class="kw">function</span> <span class="fn">destroySession</span>(id) {
+  clearInterval(timers.get(id));  <span class="cm">// ✅ 先清定时器</span>
+  timers.delete(id);
+  sessions.delete(id);           <span class="cm">// 再清数据</span>
+}</code></pre>
+
+<div class="card">
+  <h4 style="margin:0 0 0.5rem;">🧪 怎么在堆快照里验证？</h4>
+  <ol>
+    <li>搜索你的变量名（如 <code>fileBuffer</code>），看 Retained Size</li>
+    <li>在 Retainers 面板看引用链——如果看到 <code>system / Context</code> → 闭包持有 → 全局对象，就是泄漏</li>
+    <li>对比两次快照：如果同名的闭包对象 Delta 一直在涨，确认为泄漏</li>
+  </ol>
+</div>
+
+<!-- ──────────────────────────────────────── -->
+<h4>二、Buffer 爆炸：不是 Buffer 本身大，是"积压"把它撑大了</h4>
+
+<p>Buffer 本身没有泄漏机制——<code>Buffer.alloc()</code> 之后只要没引用就会被 GC。真正的问题是<strong>并发未受控地创建大量 Buffer</strong>，或者<strong>请求体没有上限</strong>导致单次分配过大。</p>
+
+<h4>❌ 场景 1：没有限制请求体大小</h4>
+
+<pre><code><span class="cm">// ❌ 攻击者发一个 10GB 的 POST body → 服务器 OOM</span>
+<span class="kw">const</span> server = http.createServer(async (req, res) => {
+  <span class="kw">const</span> chunks = [];
+  <span class="kw">for</span> await (<span class="kw">const</span> chunk <span class="kw">of</span> req) {
+    chunks.push(chunk);  <span class="cm">// 所有 chunk 都囤在内存里，没有上限</span>
+  }
+  <span class="kw">const</span> body = Buffer.concat(chunks);
+  <span class="kw">await</span> processBody(body);
+  res.end(<span class="str">'ok'</span>);
+});</code></pre>
+
+<h4>✅ 修复：加大小限制 + 流式处理</h4>
+
+<pre><code><span class="kw">const</span> MAX_BODY = <span class="num">10</span> * <span class="num">1024</span> * <span class="num">1024</span>;  <span class="cm">// 10MB 上限</span>
+
+<span class="kw">const</span> server = http.createServer(async (req, res) => {
+  <span class="kw">const</span> contentLength = parseInt(req.headers[<span class="str">'content-length'</span>], <span class="num">10</span>);
+  <span class="kw">if</span> (contentLength > MAX_BODY) {
+    res.statusCode = <span class="num">413</span>;
+    res.end(<span class="str">'Payload Too Large'</span>);
+    <span class="kw">return</span>;
+  }
+
+  <span class="kw">const</span> chunks = [];
+  <span class="kw">let</span> received = <span class="num">0</span>;
+  <span class="kw">for</span> await (<span class="kw">const</span> chunk <span class="kw">of</span> req) {
+    received += chunk.length;
+    <span class="kw">if</span> (received > MAX_BODY) {         <span class="cm">// 双重检查（Content-Length 可能伪造）</span>
+      res.statusCode = <span class="num">413</span>; res.end(); <span class="kw">return</span>;
+    }
+    chunks.push(chunk);
+  }
+  <span class="kw">const</span> body = Buffer.concat(chunks);
+  <span class="kw">await</span> processBody(body);
+  res.end(<span class="str">'ok'</span>);
+});</code></pre>
+
+<h4>❌ 场景 2：并发创建 Buffer 无上限</h4>
+
+<pre><code><span class="cm">// ❌ 1000 个请求同时进来 → 1000 × 10MB = 10GB → OOM</span>
+app.get(<span class="str">'/report'</span>, async (ctx) => {
+  <span class="kw">const</span> report = generateLargeReport();  <span class="cm">// 生成 10MB 的报告 Buffer</span>
+  ctx.body = report;
+});</code></pre>
+
+<h4>✅ 修复：并发限流 + 流式返回</h4>
+
+<pre><code><span class="kw">const</span> { Readable } = require(<span class="str">'stream'</span>);
+
+app.get(<span class="str">'/report'</span>, async (ctx) => {
+  <span class="cm">// ✅ 流式返回——不需要一次性创建整个 Buffer</span>
+  ctx.type = <span class="str">'text/csv'</span>;
+  ctx.body = <span class="kw">new</span> Readable({
+    read() {
+      <span class="kw">const</span> row = generateNextRow();  <span class="cm">// 逐行生成</span>
+      <span class="kw">if</span> (row) <span class="kw">this</span>.push(row);
+      <span class="kw">else</span> <span class="kw">this</span>.push(<span class="kw">null</span>);       <span class="cm">// 结束</span>
+    }
+  });
+});</code></pre>
+
+<h4>❌ 场景 3：循环里频繁创建 Buffer</h4>
+
+<pre><code><span class="cm">// ❌ 每次循环 new 一个 Buffer → 频繁 GC → 性能抖动</span>
+<span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; <span class="num">100000</span>; i++) {
+  <span class="kw">const</span> buf = Buffer.alloc(<span class="num">4096</span>);  <span class="cm">// 每次都分配新内存</span>
+  processChunk(buf);
+}</code></pre>
+
+<h4>✅ 修复：Buffer 池复用</h4>
+
+<pre><code><span class="kw">class</span> <span class="fn">BufferPool</span> {
+  pool = [];
+  <span class="fn">acquire</span>(size) {
+    <span class="kw">const</span> buf = <span class="kw">this</span>.pool.pop();
+    <span class="kw">if</span> (buf &amp;&amp; buf.length >= size) <span class="kw">return</span> buf;
+    <span class="kw">return</span> Buffer.allocUnsafe(size);  <span class="cm">// allocUnsafe 不初始化,比 alloc 快</span>
+  }
+  <span class="fn">release</span>(buf) { <span class="kw">this</span>.pool.push(buf); }
+}
+
+<span class="kw">const</span> pool = <span class="kw">new</span> BufferPool();
+<span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; <span class="num">100000</span>; i++) {
+  <span class="kw">const</span> buf = pool.acquire(<span class="num">4096</span>);
+  processChunk(buf);
+  pool.release(buf);  <span class="cm">// ✅ 归还给池,下次复用</span>
+}</code></pre>
+
+<div class="warn">
+  <strong>⚠️ <code>Buffer.allocUnsafe</code> 不初始化内存，可能包含旧数据（安全风险）。只用在内部分配、立刻覆盖的场景。对外暴露的数据用 <code>Buffer.alloc</code>（零初始化）。
+</div>
+
+<!-- ──────────────────────────────────────── -->
+<h4>三、Stream 背压：忽略了背压是内存泄漏的隐藏炸弹</h4>
+
+<p>Stream 的核心设计是<strong>背压（Backpressure）</strong>：消费端处理速度 &lt; 生产端写入速度时，Stream 会自动暂停生产端，防止内存中积压数据。</p>
+
+<p>但背压<strong>不是自动生效的</strong>——必须正确返回 <code>write()</code> 的返回值并监听 <code>drain</code> 事件。</p>
+
+<h4>❌ 经典错误：忽略 <code>write()</code> 返回值</h4>
+
+<pre><code><span class="kw">const</span> fs = require(<span class="str">'fs'</span>);
+
+<span class="cm">// ❌ 不管 write() 返回 false → 背压失效
+// 数据在内存中无限积压（Writable 的内部缓冲）
+// 读取 1GB 文件时 → 整个文件内容都进了内存 → OOM</span>
+<span class="kw">const</span> readStream = fs.createReadStream(<span class="str">'huge-file.bin'</span>);
+<span class="kw">const</span> writeStream = fs.createWriteStream(<span class="str">'copy.bin'</span>);
+
+readStream.on(<span class="str">'data'</span>, (chunk) => {
+  writeStream.write(chunk);  <span class="cm">// ← 返回 false 时表示"我写不下了,暂停"</span>
+  <span class="cm">// 但代码没管 → 数据继续涌入内存</span>
+});</code></pre>
+
+<h4>✅ 正确写法 1：用 <code>pipe()</code>（最简单,内置背压处理）</h4>
+
+<pre><code><span class="cm">// ✅ pipe() 自动处理背压——99% 的场景用它就够了</span>
+fs.createReadStream(<span class="str">'huge-file.bin'</span>).pipe(fs.createWriteStream(<span class="str">'copy.bin'</span>));</code></pre>
+
+<h4>✅ 正确写法 2：手动监听 <code>drain</code>（需要自定义处理逻辑时）</h4>
+
+<pre><code><span class="kw">const</span> readStream = fs.createReadStream(<span class="str">'huge-file.bin'</span>);
+<span class="kw">const</span> writeStream = fs.createWriteStream(<span class="str">'copy.bin'</span>);
+
+readStream.on(<span class="str">'data'</span>, (chunk) => {
+  <span class="kw">const</span> canContinue = writeStream.write(chunk);
+  <span class="kw">if</span> (!canContinue) {
+    <span class="cm">// ✅ 写不下了 → 暂停读取</span>
+    readStream.pause();
+
+    <span class="cm">// ✅ 等写端排空了 → 恢复读取</span>
+    writeStream.once(<span class="str">'drain'</span>, () => {
+      readStream.resume();
+    });
+  }
+});</code></pre>
+
+<h4>❌ Transform Stream 的背压陷阱</h4>
+
+<p>Transform Stream 有内部缓冲。如果 <code>_transform</code> 是异步的但没正确处理背压，缓冲里的数据会越积越多：</p>
+
+<pre><code><span class="kw">const</span> { Transform } = require(<span class="str">'stream'</span>);
+
+<span class="cm">// ❌ 异步 transform 但没有处理背压</span>
+<span class="kw">const</span> slowTransform = <span class="kw">new</span> Transform({
+  async transform(chunk, encoding, callback) {
+    <span class="kw">const</span> result = await slowDbQuery(chunk);  <span class="cm">// 每次 200ms</span>
+    <span class="kw">this</span>.push(result);
+    callback();
+  }
+});
+
+<span class="cm">// 上游 1000 chunk/s 进来 → transform 200ms/chunk → 内部缓冲爆炸</span>
+fastSource.pipe(slowTransform).pipe(destination);</code></pre>
+
+<h4>✅ 修复：控制并发 + 正确使用 callback</h4>
+
+<pre><code><span class="kw">const</span> slowTransform = <span class="kw">new</span> Transform({
+  highWaterMark: <span class="num">16</span>,  <span class="cm">// ✅ 限制内部缓冲大小（默认 16 个对象）</span>
+  async transform(chunk, encoding, callback) {
+    <span class="kw">try</span> {
+      <span class="kw">const</span> result = await slowDbQuery(chunk);
+      <span class="kw">this</span>.push(result);
+      callback();  <span class="cm">// ✅ 处理完才 callback,告诉上游可以再发</span>
+    } <span class="kw">catch</span> (err) {
+      callback(err); <span class="cm">// ✅ 错误也要传,否则流会卡住</span>
+    }
+  }
+});</code></pre>
+
+<h4>Reader/Consumer 速度不匹配时的内存影响</h4>
+
+<div class="card">
+  <pre style="background:none;margin:0;padding:0;"><code>上游(生产)                    流内部缓冲                         下游(消费)
+10 MB/s 写入  ──→  [============  积压缓冲  ============]  ──→  1 MB/s 读取
+
+如果没背压:
+  缓冲里的数据线性增长 → 内存无限膨胀 → OOM
+
+如果有背压(drain):
+  缓冲满时 write() 返回 false → 上游暂停 → 缓冲被消费 → drain 事件 → 上游恢复</code></pre>
+</div>
+
+<!-- ──────────────────────────────────────── -->
+<h4>四、排查心法：内存问题的万能公式</h4>
+
+<div class="card">
+  <ol>
+    <li><strong>确认是泄漏还是正常使用</strong>：生产环境 RSS 持续增长且不回落 → 泄漏。RSS 波动但 GC 后回落 → 正常。</li>
+    <li><strong>取两个堆快照</strong>：一个是基线，一个是内存上涨后。间隔至少让内存涨一倍。</li>
+    <li><strong>Comparison 视图查 Delta</strong>：看 Constructor 的 `# New` / `# Delta` / `Size Delta`，增长最大的展开。</li>
+    <li><strong>Retainers 面板追引用链</strong>：选中可疑对象 → 看 Retainers → 追溯到 GC Root → 找到根源代码。</li>
+    <li><strong>修好后验证</strong>：同样条件再取快照 → Delta 应为零或下降。</li>
+  </ol>
+  <p style="margin-top:0.8rem;"><strong>最常见的三类根源：全局变量/缓存无上限、事件监听器未解绑、闭包持有大对象不放。</strong></p>
+</div>
+
+<div class="tip">
+  <strong>✅ 一句话总结：</strong>GC 能回收"没人引用的对象"。你的任务不是帮 GC，而是<strong>确保该放手时引用链断了</strong>——闭包缩小抓取范围、Buffer 加容量上限、Stream 正确处理背压。
+</div>
 
 <h3 id="s2-5">2.5 Buffer 与二进制数据</h3>
 <ul>
